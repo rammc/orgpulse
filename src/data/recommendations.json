@@ -3,19 +3,19 @@
     "id": "quick-wins",
     "matrix_position": { "impact": "high", "effort": "low" },
     "color": "green",
-    "icon": "\u26a1",
+    "icon": "zap",
     "title": "Quick Wins",
-    "priority_label": "Sofort umsetzen",
-    "subtitle": "Maximaler Impact bei minimalem Aufwand \u2013 sofort umsetzbar ohne Release-Risiko.",
-    "scale_center_hint": "Scale Center \u2192 Data Storage & API Usage zeigt, welche Objekte die meisten Records haben und wo unselektive Queries laufen.",
+    "priority_label": "Implement Now",
+    "subtitle": "Maximum performance impact with minimal effort — can be implemented immediately without release risk.",
+    "scale_center_hint": "Scale Center \u2192 Data Storage & API Usage reveals which objects hold the most records and where unselective queries are running.",
     "trigger_signals": [
       { "metric": "db_cpu_time", "threshold": "high" },
       { "keywords": ["full table scan", "slow soql"] }
     ],
     "recommendations": [
       {
-        "title": "Custom Indexes auf gro\u00dfe Objekte",
-        "body": "F\u00fcr Objekte mit >100k Records: Identifiziere die meistgenutzten Filter-Felder in SOQL-Queries und Reports. Erstelle einen Case bei Salesforce Support f\u00fcr Custom Indexes auf diese Felder.",
+        "title": "Custom Indexes on High-Volume Objects",
+        "body": "For objects with >100k records: identify the most frequently used filter fields in SOQL queries and reports. File a case with Salesforce Support to request Custom Indexes on these fields. This eliminates full table scans and dramatically reduces query execution time.",
         "tags": ["Apex", "SOQL", "Support Case"],
         "references": [
           {
@@ -25,8 +25,8 @@
         ]
       },
       {
-        "title": "Sharing Rules konsolidieren",
-        "body": "Pr\u00fcfe Sharing Rules auf redundante oder \u00fcberlappende Eintr\u00e4ge. Konsolidiere wo m\u00f6glich und nutze Sharing Groups statt einzelner Rules. Reduziert Share-Row-Berechnung drastisch.",
+        "title": "Consolidate Sharing Rules",
+        "body": "Audit existing Sharing Rules for redundant or overlapping entries. Consolidate where possible and use Sharing Groups instead of individual rules. This drastically reduces share row recalculation time and improves DML performance on shared objects.",
         "tags": ["Security", "Sharing"],
         "references": [
           {
@@ -36,8 +36,8 @@
         ]
       },
       {
-        "title": "Validation Rules mit Early Return",
-        "body": "Pr\u00fcfe Validation Rules auf teure SOQL-basierte Cross-Object-Checks. Setze g\u00fcnstige Pr\u00fcfungen (Feld-Checks) an den Anfang der Regel mit &&-Verkn\u00fcpfung, damit teure Checks nur bei Bedarf laufen.",
+        "title": "Validation Rules with Early Return",
+        "body": "Review Validation Rules that perform expensive SOQL-based cross-object checks. Place inexpensive field-level checks at the beginning of the rule using AND logic, so costly evaluations only run when necessary. This avoids unnecessary Governor Limit consumption.",
         "tags": ["Configuration", "Performance"],
         "references": []
       }
@@ -49,11 +49,11 @@
     "id": "prioritize",
     "matrix_position": { "impact": "high", "effort": "medium" },
     "color": "green",
-    "icon": "\ud83c\udfaf",
+    "icon": "target",
     "title": "Prioritize",
-    "priority_label": "Zeitnah einplanen",
-    "subtitle": "Hoher Impact bei moderatem Aufwand \u2013 im n\u00e4chsten Sprint einplanen.",
-    "scale_center_hint": "Scale Center \u2192 Apex Executions & Concurrent Requests zeigen Apex-Governorlimit-N\u00e4he und Parallelit\u00e4ts-Engp\u00e4sse.",
+    "priority_label": "Schedule Next Sprint",
+    "subtitle": "High performance impact with moderate effort — schedule for the next sprint or release cycle.",
+    "scale_center_hint": "Scale Center \u2192 Apex Executions & Concurrent Requests show how close you are to Apex Governor Limits and where concurrency bottlenecks exist.",
     "trigger_signals": [
       { "metric": "concurrent_apex_errors", "threshold": "> 0" },
       { "metric": "row_lock_errors", "threshold": "> 0" },
@@ -61,8 +61,8 @@
     ],
     "recommendations": [
       {
-        "title": "Apex CPU-Time Optimierung",
-        "body": "Identifiziere Top-5 Apex-Transaktionen nach CPU-Zeit \u00fcber Debug Logs. Typische Ursachen: verschachtelte Loops, unselektive SOQL in Triggern, unn\u00f6tige String-Konkatenation. Nutze Limits.getCpuTime() f\u00fcr Profiling.",
+        "title": "Apex CPU Time Optimization",
+        "body": "Identify the top 5 Apex transactions by CPU time using Debug Logs. Common causes: nested loops, unselective SOQL in Triggers, unnecessary String concatenation. Use Limits.getCpuTime() for in-transaction profiling to isolate expensive code paths.",
         "tags": ["Apex", "Performance", "Governor Limits"],
         "references": [
           {
@@ -72,8 +72,8 @@
         ]
       },
       {
-        "title": "Bulkification aller Trigger",
-        "body": "Pr\u00fcfe alle Trigger auf korrekte Bulkification. SOQL/DML darf niemals in Schleifen stehen. Nutze das Trigger-Handler-Pattern mit Maps f\u00fcr Bulk-Operationen.",
+        "title": "Bulkify All Triggers",
+        "body": "Audit all Apex Triggers for proper bulkification. SOQL queries and DML statements must never appear inside loops. Adopt the Trigger Handler pattern using Maps for bulk operations to prevent hitting Governor Limits during data loads and batch operations.",
         "tags": ["Apex", "Triggers", "Best Practice"],
         "references": [
           {
@@ -83,8 +83,8 @@
         ]
       },
       {
-        "title": "Row Lock Analyse & Mitigation",
-        "body": "Row Locks entstehen durch parallele DML auf denselben Records. Identifiziere \u00fcber Scale Center die betroffenen Objekte. L\u00f6sungsans\u00e4tze: Queueable Apex f\u00fcr Nachverarbeitung, Record-Ordering, Parent-Lock-Vermeidung.",
+        "title": "Row Lock Analysis & Mitigation",
+        "body": "Row Locks occur when parallel DML operations target the same records. Use Scale Center to identify affected objects. Mitigation strategies: offload processing to Queueable Apex, enforce record ordering in batch jobs, and avoid parent record lock escalation through careful DML sequencing.",
         "tags": ["Apex", "Concurrency", "Data Model"],
         "references": [
           {
@@ -101,19 +101,19 @@
     "id": "strategic",
     "matrix_position": { "impact": "high", "effort": "high" },
     "color": "yellow",
-    "icon": "\ud83d\udee4\ufe0f",
+    "icon": "compass",
     "title": "Strategic",
-    "priority_label": "Strategisch planen",
-    "subtitle": "Hoher Impact, aber hoher Aufwand \u2013 als strategisches Projekt planen mit klarem Business Case.",
-    "scale_center_hint": "Scale Center \u2192 \u00dcbergreifende Trends (Login-Wachstum, Storage-Wachstum) zeigen, ob eine strategische Ma\u00dfnahme n\u00f6tig ist.",
+    "priority_label": "Plan Strategically",
+    "subtitle": "High performance impact but significant effort required — plan as a strategic initiative with a clear business case.",
+    "scale_center_hint": "Scale Center \u2192 cross-metric trends (login growth, storage growth, API usage trajectory) indicate whether a strategic architectural change is needed.",
     "trigger_signals": [
       { "metric": "successful_logins", "threshold": "high_growth" },
       { "keywords": ["architecture", "migration", "platform event"] }
     ],
     "recommendations": [
       {
-        "title": "Event-Driven Architecture einf\u00fchren",
-        "body": "Bei hoher Kopplung zwischen Systemen: Platform Events oder Change Data Capture als Entkopplungsschicht einf\u00fchren. Reduziert synchrone Callouts und verbessert Skalierbarkeit.",
+        "title": "Adopt Event-Driven Architecture",
+        "body": "For orgs with high inter-system coupling: introduce Platform Events or Change Data Capture as a decoupling layer. This reduces synchronous callouts, improves scalability, and makes the architecture more resilient to downstream system failures.",
         "tags": ["Architecture", "Platform Events", "Integration"],
         "references": [
           {
@@ -124,7 +124,7 @@
       },
       {
         "title": "Data Architecture Review",
-        "body": "Bei >10M Records pro Objekt: Pr\u00fcfe Archivierungsstrategie (Big Objects, External Storage), Partitionierung der Daten, und ob ein Data-Model-Refactoring sinnvoll ist.",
+        "body": "For objects exceeding 10M records: evaluate archival strategies (Big Objects, external storage), data partitioning approaches, and whether a Data Model refactoring is warranted. Consider Skinny Tables and archive policies to keep active datasets performant.",
         "tags": ["Data Model", "Architecture", "Big Objects"],
         "references": [
           {
@@ -134,8 +134,8 @@
         ]
       },
       {
-        "title": "Org-Split Evaluation",
-        "body": "Bei fundamentalen Skalierungsproblemen: Pr\u00fcfe, ob ein Org-Split (z.B. nach Business Unit oder Region) sinnvoll ist. Aufwand hoch, aber kann langfristig die einzige L\u00f6sung sein.",
+        "title": "Org Split Evaluation",
+        "body": "For fundamental scalability challenges: evaluate whether an Org Split (e.g., by business unit or region) is warranted. This is a high-effort initiative, but for mature orgs approaching platform limits, it may be the only long-term solution.",
         "tags": ["Architecture", "Strategy", "Governance"],
         "references": []
       }
@@ -147,19 +147,19 @@
     "id": "take-along",
     "matrix_position": { "impact": "medium", "effort": "low" },
     "color": "green",
-    "icon": "\ud83d\udce6",
+    "icon": "package",
     "title": "Take Along",
-    "priority_label": "Mitnehmen",
-    "subtitle": "Moderater Impact bei geringem Aufwand \u2013 bei n\u00e4chster Gelegenheit mitnehmen.",
-    "scale_center_hint": "Scale Center \u2192 API Usage zeigt Callout-Volumen und welche Connected Apps am meisten Requests erzeugen.",
+    "priority_label": "Pick Up Opportunistically",
+    "subtitle": "Moderate impact with low effort — include in your next deployment when you're already working in the area.",
+    "scale_center_hint": "Scale Center \u2192 API Usage shows callout volume and which Connected Apps generate the most requests.",
     "trigger_signals": [
       { "metric": "total_callout_errors", "threshold": "> 0" },
       { "keywords": ["callout", "api usage", "connected app"] }
     ],
     "recommendations": [
       {
-        "title": "Callout Error Handling verbessern",
-        "body": "Implementiere Retry-Logik mit exponentiellem Backoff f\u00fcr externe Callouts. Nutze Named Credentials statt hartcodierter Endpoints. Logge fehlgeschlagene Callouts in ein Custom Object f\u00fcr Monitoring.",
+        "title": "Improve Callout Error Handling",
+        "body": "Implement retry logic with exponential backoff for external callouts. Use Named Credentials instead of hardcoded endpoints. Log failed callouts to a Custom Object for monitoring and create alerts for sustained error patterns.",
         "tags": ["Integration", "Apex", "Error Handling"],
         "references": [
           {
@@ -169,8 +169,8 @@
         ]
       },
       {
-        "title": "Unused Flows & Process Builder deaktivieren",
-        "body": "Identifiziere inaktive oder redundante Flows und Process Builder. Deaktiviere oder l\u00f6sche sie, um unn\u00f6tige Evaluierungen bei DML-Operationen zu vermeiden.",
+        "title": "Deactivate Unused Flows & Process Builder",
+        "body": "Identify inactive or redundant Flows and Process Builder automations. Deactivate or delete them to eliminate unnecessary evaluations during DML operations. Each active automation adds overhead to every record save on its trigger object.",
         "tags": ["Configuration", "Automation", "Cleanup"],
         "references": []
       }
@@ -182,11 +182,11 @@
     "id": "evaluate",
     "matrix_position": { "impact": "medium", "effort": "medium" },
     "color": "yellow",
-    "icon": "\ud83d\udd0d",
+    "icon": "search",
     "title": "Evaluate",
-    "priority_label": "Evaluieren",
-    "subtitle": "Moderater Impact bei moderatem Aufwand \u2013 detailliert evaluieren und priorisieren.",
-    "scale_center_hint": "Scale Center \u2192 Login Metrics & Failed Logins zeigen Authentifizierungsprobleme und unautorisierte Zugriffsversuche.",
+    "priority_label": "Analyze & Decide",
+    "subtitle": "Moderate impact with moderate effort — conduct a detailed evaluation before committing resources.",
+    "scale_center_hint": "Scale Center \u2192 Login Metrics & Failed Logins reveal authentication issues and potentially unauthorized access attempts.",
     "trigger_signals": [
       { "metric": "failed_logins", "threshold": "> 0" },
       { "metric": "total_callout_errors", "threshold": "moderate" },
@@ -194,8 +194,8 @@
     ],
     "recommendations": [
       {
-        "title": "Login Failure Analyse",
-        "body": "Pr\u00fcfe Login-Failure-Ursachen: Locked Accounts, ung\u00fcltige Passwort-Policies, SSO-Fehlkonfiguration, IP-Range-Restrictions. Nutze Login History und Event Monitoring f\u00fcr Root-Cause-Analyse.",
+        "title": "Login Failure Root Cause Analysis",
+        "body": "Investigate login failure causes: locked accounts, misconfigured password policies, SSO configuration errors, IP range restrictions. Use Login History and Event Monitoring for root cause analysis. Sustained failed logins can indicate security issues or user experience problems.",
         "tags": ["Security", "Identity", "Monitoring"],
         "references": [
           {
@@ -206,7 +206,7 @@
       },
       {
         "title": "Integration Pattern Review",
-        "body": "Bei wiederkehrenden Callout Errors: Pr\u00fcfe ob das richtige Integrationsmuster genutzt wird (Request-Reply vs. Fire-and-Forget vs. Batch). Oft sind synchrone Callouts die Ursache f\u00fcr Timeout-Fehler.",
+        "body": "For recurring callout errors: review whether the correct integration pattern is in use (Request-Reply vs. Fire-and-Forget vs. Batch). Synchronous callouts are often the root cause of timeout errors. Consider migrating to Platform Events for decoupled processing.",
         "tags": ["Integration", "Architecture", "Patterns"],
         "references": [
           {
@@ -223,19 +223,19 @@
     "id": "weigh-up",
     "matrix_position": { "impact": "medium", "effort": "high" },
     "color": "orange",
-    "icon": "\u2696\ufe0f",
+    "icon": "scale",
     "title": "Weigh Up",
-    "priority_label": "Sorgf\u00e4ltig abw\u00e4gen",
-    "subtitle": "Moderater Impact bei hohem Aufwand \u2013 nur mit klarem ROI-Nachweis angehen.",
-    "scale_center_hint": "Scale Center \u2192 Concurrent UI Errors zeigen Frontend-Performance-Probleme, die auf tiefere Architekturthemen hindeuten k\u00f6nnen.",
+    "priority_label": "Justify ROI First",
+    "subtitle": "Moderate impact with high effort — only pursue with a clear ROI justification and stakeholder alignment.",
+    "scale_center_hint": "Scale Center \u2192 Concurrent UI Errors indicate frontend performance issues that may point to deeper architectural concerns.",
     "trigger_signals": [
       { "metric": "concurrent_ui_errors", "threshold": "> 0" },
       { "keywords": ["ui error", "concurrent", "page timeout"] }
     ],
     "recommendations": [
       {
-        "title": "LWC Performance Audit",
-        "body": "Analysiere Lightning Web Components auf unn\u00f6tige Re-Renders, fehlende Lazy Loading, und zu viele Wire-Adapter. Nutze Chrome DevTools Performance Tab und Lightning Inspector.",
+        "title": "Lightning Web Components Performance Audit",
+        "body": "Analyze Lightning Web Components for unnecessary re-renders, missing lazy loading, and excessive wire adapters. Use Chrome DevTools Performance tab and the Lightning Inspector browser extension to identify render bottlenecks.",
         "tags": ["LWC", "Frontend", "Performance"],
         "references": [
           {
@@ -245,8 +245,8 @@
         ]
       },
       {
-        "title": "Custom Aura-to-LWC Migration",
-        "body": "Identifiziere performance-kritische Aura Components und plane Migration zu LWC. LWC hat signifikant bessere Render-Performance durch den leichteren Framework-Overhead.",
+        "title": "Aura to LWC Migration",
+        "body": "Identify performance-critical Aura Components and plan migration to Lightning Web Components. LWC delivers significantly better render performance due to its lighter framework overhead and closer-to-native Web Component model.",
         "tags": ["LWC", "Aura", "Migration"],
         "references": [
           {
@@ -263,22 +263,22 @@
     "id": "opportunistic",
     "matrix_position": { "impact": "low", "effort": "low" },
     "color": "yellow",
-    "icon": "\ud83c\udf31",
+    "icon": "leaf",
     "title": "Opportunistic",
-    "priority_label": "Bei Gelegenheit",
-    "subtitle": "Geringer Impact, geringer Aufwand \u2013 opportunistisch mitnehmen, wenn man eh in der N\u00e4he arbeitet.",
-    "scale_center_hint": "Scale Center \u2192 API Usage Trends zeigen, ob API-Verbrauch optimiert werden kann.",
+    "priority_label": "When Convenient",
+    "subtitle": "Low impact with low effort — pick up opportunistically when you're already working in the area.",
+    "scale_center_hint": "Scale Center \u2192 API Usage Trends show whether API consumption can be optimized.",
     "trigger_signals": [{ "keywords": ["api optimization", "cleanup", "tech debt"] }],
     "recommendations": [
       {
-        "title": "Unused Custom Fields aufr\u00e4umen",
-        "body": "Identifiziere Custom Fields ohne Datenbef\u00fcllung (FieldUsage-Report). L\u00f6sche oder archiviere nicht genutzte Felder. Reduziert Object-Komplexit\u00e4t und verbessert Developer Experience.",
+        "title": "Clean Up Unused Custom Fields",
+        "body": "Identify Custom Fields with zero data population using the Field Usage report or third-party metadata tools. Delete or archive unused fields to reduce object complexity, improve developer experience, and speed up describe calls.",
         "tags": ["Cleanup", "Data Model", "Governance"],
         "references": []
       },
       {
-        "title": "Debug Log Level optimieren",
-        "body": "Stelle sicher, dass keine Debug Logs mit Fine/Finest-Level in Produktion aktiv sind. Erh\u00f6hte Log-Level k\u00f6nnen bis zu 10% CPU-Overhead verursachen.",
+        "title": "Optimize Debug Log Levels",
+        "body": "Ensure no Debug Logs with Fine or Finest log levels are active in production. Elevated log levels can cause up to 10% CPU overhead per transaction and contribute to Apex CPU Time limit exceptions under load.",
         "tags": ["Operations", "Performance", "Quick Fix"],
         "references": []
       }
@@ -290,16 +290,16 @@
     "id": "defer",
     "matrix_position": { "impact": "low", "effort": "medium" },
     "color": "orange",
-    "icon": "\u23f3",
+    "icon": "clock",
     "title": "Defer",
-    "priority_label": "Zur\u00fcckstellen",
-    "subtitle": "Geringer Impact bei moderatem Aufwand \u2013 auf die Backlog-Liste setzen, nicht aktiv priorisieren.",
-    "scale_center_hint": "Scale Center zeigt hier keine dringenden Signale \u2013 diese Items kommen aus Best-Practice-Reviews.",
+    "priority_label": "Backlog",
+    "subtitle": "Low impact with moderate effort — add to the backlog but do not actively prioritize.",
+    "scale_center_hint": "Scale Center shows no urgent signals for these items — they stem from best-practice reviews and long-term governance goals.",
     "trigger_signals": [{ "keywords": ["minor", "nice to have", "backlog"] }],
     "recommendations": [
       {
-        "title": "Test Coverage erh\u00f6hen",
-        "body": "Identifiziere Apex-Klassen mit <75% Coverage und erstelle Unit Tests. Fokus auf kritische Business-Logik, nicht nur Coverage-Prozent.",
+        "title": "Increase Apex Test Coverage",
+        "body": "Identify Apex classes with less than 75% code coverage and create meaningful unit tests. Focus on testing critical business logic and edge cases, not just raising the coverage percentage. Use Test.startTest()/Test.stopTest() to properly isolate Governor Limit consumption.",
         "tags": ["Testing", "Apex", "Quality"],
         "references": [
           {
@@ -309,8 +309,8 @@
         ]
       },
       {
-        "title": "Permission Set \u00dcberpr\u00fcfung",
-        "body": "Migriere von Profiles zu Permission Sets und Permission Set Groups. Reduziert Wartungsaufwand und verbessert Governance langfristig.",
+        "title": "Migrate from Profiles to Permission Sets",
+        "body": "Migrate security assignments from Profiles to Permission Sets and Permission Set Groups. This reduces maintenance overhead, improves governance, and aligns with Salesforce's long-term direction of deprecating Profile-based permissions.",
         "tags": ["Security", "Governance", "Configuration"],
         "references": []
       }
@@ -322,22 +322,22 @@
     "id": "skip",
     "matrix_position": { "impact": "low", "effort": "high" },
     "color": "red",
-    "icon": "\u26d4",
+    "icon": "x-circle",
     "title": "Skip",
-    "priority_label": "Bewusst nicht umsetzen",
-    "subtitle": "Geringer Impact bei hohem Aufwand \u2013 bewusste Entscheidung, diese Ma\u00dfnahmen nicht zu verfolgen.",
-    "scale_center_hint": "Diese Ma\u00dfnahmen tauchen in Best-Practice-Listen auf, liefern aber im konkreten Org-Kontext keinen ROI.",
+    "priority_label": "Consciously Decline",
+    "subtitle": "Low impact with high effort — a deliberate decision not to pursue these measures. Document the rationale.",
+    "scale_center_hint": "These recommendations appear in best-practice guides but deliver insufficient ROI in the context of your specific org's performance profile.",
     "trigger_signals": [],
     "recommendations": [
       {
-        "title": "Kompletter Rewrite der Apex-Schicht",
-        "body": "Ein vollst\u00e4ndiger Rewrite aller Apex-Klassen auf ein neues Framework (z.B. Enterprise Patterns) klingt verlockend, ist aber in produktiven Orgs mit gewachsener Codebasis fast nie wirtschaftlich sinnvoll.",
+        "title": "Complete Apex Layer Rewrite",
+        "body": "A full rewrite of all Apex classes to a new framework (e.g., Enterprise Design Patterns from scratch) sounds appealing but is almost never economically justified in production orgs with mature, tested codebases. Prefer incremental refactoring of hotspots instead.",
         "tags": ["Architecture", "Strategy", "Anti-Pattern"],
         "references": []
       },
       {
-        "title": "Custom UI statt Standard-Features",
-        "body": "Eigene LWC-Implementierungen f\u00fcr Standardfeatures (List Views, Related Lists, Reports) erstellen. Der Wartungsaufwand \u00fcbersteigt fast immer den Nutzen.",
+        "title": "Custom UI Replacing Standard Features",
+        "body": "Building custom Lightning Web Components to replace standard features (List Views, Related Lists, Reports) creates significant ongoing maintenance burden. The effort to keep parity with Salesforce's evolving standard features almost always exceeds the benefit.",
         "tags": ["LWC", "Strategy", "Anti-Pattern"],
         "references": []
       }

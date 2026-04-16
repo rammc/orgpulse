@@ -3,6 +3,26 @@ import { analyzeWithOCR } from './ocr.js';
 import { analyzeWithVision, getVisionErrorMessage } from './vision.js';
 import { matchRecommendations, generateSignals } from './recommendations.js';
 
+// SVG Icons (Lucide-style, stroke-based)
+const ICONS = {
+  zap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  target:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  compass:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+  package:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+  search:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  scale:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>',
+  clock:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  'x-circle':
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+};
+
 // State
 let recommendationsData = [];
 let selectedFile = null;
@@ -47,9 +67,11 @@ function renderMatrix() {
       cell.className = `matrix-cell matrix-cell--${data.color}`;
       cell.dataset.cellId = cellId;
 
+      const iconSvg = ICONS[data.icon] || '';
+
       cell.innerHTML = `
         <div class="matrix-cell__hit-count" id="hit-${cellId}">0</div>
-        <div class="matrix-cell__icon">${data.icon}</div>
+        <div class="matrix-cell__icon">${iconSvg}</div>
         <div class="matrix-cell__title">${data.title}</div>
         <div class="matrix-cell__label">${data.priority_label}</div>
       `;
@@ -61,7 +83,6 @@ function renderMatrix() {
 }
 
 function highlightCells(highlights) {
-  // Clear previous highlights
   document.querySelectorAll('.matrix-cell--highlighted').forEach((el) => {
     el.classList.remove('matrix-cell--highlighted');
   });
@@ -96,8 +117,7 @@ function openDetailPanel(cellId) {
   const title = document.getElementById('detail-title');
   const body = document.getElementById('detail-body');
 
-  // Color class for priority badge
-  const colorClass = {
+  const colorStyle = {
     green:
       'background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border)',
     yellow:
@@ -107,17 +127,21 @@ function openDetailPanel(cellId) {
     red: 'background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border)',
   };
 
+  const iconSvg = ICONS[data.icon] || '';
+
   title.innerHTML = `
-    <span>${data.icon} ${data.title}</span>
-    <span class="detail-panel__priority" style="${colorClass[data.color]}">${data.priority_label}</span>
+    <span style="display:inline-flex;align-items:center;gap:0.4rem">
+      <span style="display:inline-flex;width:20px;height:20px;color:var(--${data.color})">${iconSvg}</span>
+      ${data.title}
+    </span>
+    <span class="detail-panel__priority" style="${colorStyle[data.color]}">${data.priority_label}</span>
   `;
 
-  // Check if this cell has highlight reasons
   const highlight = currentHighlights.find((h) => h.cellId === cellId);
   const highlightHtml = highlight
-    ? `<div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius-sm); font-size: 0.85rem;">
-        <strong style="color: var(--green);">Detected signals:</strong>
-        <ul style="margin: 0.5rem 0 0 1.25rem; color: var(--text-muted);">
+    ? `<div class="detail-panel__signals">
+        <div class="detail-panel__signals-title">Detected signals</div>
+        <ul class="detail-panel__signals-list">
           ${highlight.reasons.map((r) => `<li>${r}</li>`).join('')}
         </ul>
       </div>`
@@ -126,7 +150,7 @@ function openDetailPanel(cellId) {
   body.innerHTML = `
     ${highlightHtml}
     <div class="detail-panel__hint">${data.scale_center_hint}</div>
-    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">${data.subtitle}</p>
+    <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; line-height: 1.6;">${data.subtitle}</p>
     ${data.recommendations
       .map(
         (rec) => `
@@ -139,7 +163,12 @@ function openDetailPanel(cellId) {
         ${
           rec.references && rec.references.length > 0
             ? `<div class="recommendation-card__refs">
-                ${rec.references.map((ref) => `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">📄 ${ref.type === 'official_docs' ? 'Salesforce Docs' : 'Reference'} ↗</a>`).join(' ')}
+                ${rec.references
+                  .map(
+                    (ref) =>
+                      `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.type === 'official_docs' ? 'Salesforce Docs' : 'Reference'} &#8599;</a>`
+                  )
+                  .join(' ')}
               </div>`
             : ''
         }
@@ -241,6 +270,8 @@ async function runAnalysis() {
   const progressFill = document.getElementById('progress-fill');
   const analyzeBtn = document.getElementById('analyze-btn');
 
+  // Reset progress bar styling
+  progressFill.style.background = '';
   progressBar.classList.add('progress-bar--visible');
   analyzeBtn.disabled = true;
 
@@ -265,7 +296,6 @@ async function runAnalysis() {
     progressFill.style.width = '100%';
     progressFill.style.background = 'var(--red)';
 
-    // If it's a missing API key error, open settings
     if (error.message === 'NO_API_KEY') {
       setTimeout(() => {
         document.getElementById('settings-btn').click();
@@ -277,14 +307,11 @@ async function runAnalysis() {
 }
 
 function displayResults(result) {
-  // Hide progress
   document.getElementById('progress-bar').classList.remove('progress-bar--visible');
 
-  // Show detection summary
   const summary = document.getElementById('detection-summary');
   summary.classList.add('detection-summary--visible');
 
-  // Render counter cards (basic mode)
   const counterContainer = document.getElementById('counter-cards');
   if (result.mode === 'basic') {
     const counterLabels = {
@@ -311,22 +338,19 @@ function displayResults(result) {
       })
       .join('');
   } else {
-    // Deep mode: show summary
     counterContainer.innerHTML = `
-      <div style="grid-column: 1 / -1; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+      <div style="grid-column: 1 / -1; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
         ${result.summary || 'Analysis complete.'}
       </div>
     `;
   }
 
-  // Render signals
   const signals = generateSignals(result);
   const signalContainer = document.getElementById('signal-tags');
   signalContainer.innerHTML = signals
     .map((s) => `<span class="signal-tag signal-tag--${s.severity}">${s.text}</span>`)
     .join('');
 
-  // Confidence
   const confidenceEl = document.getElementById('confidence-text');
   if (result.confidence !== undefined) {
     confidenceEl.textContent = `OCR Confidence: ${Math.round(result.confidence * 100)}%`;
@@ -337,11 +361,9 @@ function displayResults(result) {
     confidenceEl.textContent = `AI Confidence (avg): ${Math.round(avgConf * 100)}%`;
   }
 
-  // Match to matrix and highlight
   const highlights = matchRecommendations(result, recommendationsData);
   highlightCells(highlights);
 
-  // Scroll to matrix
   document.getElementById('matrix-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
