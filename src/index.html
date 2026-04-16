@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OrgPulse — Salesforce Scale Center Diagnostics</title>
+    <meta
+      name="description"
+      content="Diagnose your Salesforce org's performance from a single Scale Center screenshot. Maps detected issues to a prioritized action matrix."
+    />
+    <link rel="stylesheet" href="./styles/main.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>"
+    />
+  </head>
+  <body>
+    <!-- ========== Header ========== -->
+    <header class="header">
+      <div class="header__brand">
+        <div class="header__logo">🩺</div>
+        <div>
+          <div class="header__title">OrgPulse</div>
+          <div class="header__tagline">
+            Diagnose your Salesforce org's performance from a single screenshot
+          </div>
+        </div>
+      </div>
+      <div class="header__actions">
+        <span class="badge">Private Beta</span>
+        <button class="btn-icon" id="settings-btn" title="API Key Settings" aria-label="Settings">
+          &#9881;
+        </button>
+      </div>
+    </header>
+
+    <!-- ========== Main ========== -->
+    <main class="main">
+      <!-- Upload Zone -->
+      <section id="upload-section">
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-zone__icon">📸</div>
+          <div class="upload-zone__title">Drop your Scale Center screenshot here</div>
+          <div class="upload-zone__subtitle">or click to browse &middot; PNG / JPG accepted</div>
+          <input type="file" id="file-input" accept="image/png,image/jpeg" />
+        </div>
+
+        <!-- Preview Bar -->
+        <div class="preview-bar" id="preview-bar">
+          <img class="preview-bar__thumb" id="preview-thumb" src="" alt="Preview" />
+          <div class="preview-bar__info">
+            <div class="preview-bar__name" id="preview-name"></div>
+            <div class="preview-bar__size" id="preview-size"></div>
+          </div>
+          <div class="preview-bar__actions">
+            <div class="mode-toggle">
+              <button
+                class="mode-toggle__option mode-toggle__option--active"
+                data-mode="basic"
+                id="mode-basic"
+              >
+                Basic (Free)
+              </button>
+              <button class="mode-toggle__option" data-mode="deep" id="mode-deep">
+                Deep Analysis (~$0.02)
+              </button>
+            </div>
+            <button class="btn btn--primary" id="analyze-btn">Analyze</button>
+            <button class="btn btn--ghost" id="clear-btn">Clear</button>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-bar__label" id="progress-label">Initializing OCR engine...</div>
+          <div class="progress-bar__track">
+            <div class="progress-bar__fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detection Summary -->
+      <section class="detection-summary" id="detection-summary">
+        <div class="detection-summary__title"><span>📊</span> Detection Summary</div>
+        <div class="detection-summary__counters" id="counter-cards"></div>
+        <div class="detection-summary__signals" id="signal-tags"></div>
+        <div class="detection-summary__confidence" id="confidence-text"></div>
+      </section>
+
+      <!-- Matrix -->
+      <section class="matrix-section" id="matrix-section">
+        <h2 class="matrix-section__title">Prioritization Matrix</h2>
+        <p class="matrix-section__subtitle">
+          Impact vs. Effort — click any cell for detailed recommendations
+        </p>
+
+        <div class="matrix-labels">
+          <div class="matrix-y-label">&#8593; Impact</div>
+          <div class="matrix-container">
+            <div class="matrix-grid" id="matrix-grid">
+              <!-- Cells are rendered by matrix.js -->
+            </div>
+            <div class="matrix-x-label">Effort &#8594;</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detail Panel -->
+      <div class="detail-panel" id="detail-panel">
+        <div class="detail-panel__header">
+          <div class="detail-panel__title" id="detail-title"></div>
+          <button class="detail-panel__close" id="detail-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="detail-panel__body" id="detail-body"></div>
+      </div>
+    </main>
+
+    <!-- ========== Settings Modal ========== -->
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal">
+        <div class="modal__title">&#9881; API Key Settings</div>
+        <div class="modal__text">
+          OrgPulse Basic Mode is completely free and runs entirely in your browser. To enable Deep
+          Analysis Mode (AI-powered chart interpretation), provide your own Anthropic API key.
+        </div>
+        <div class="modal__text">
+          <strong>Cost:</strong> Approximately $0.02 per screenshot analysis, billed directly by
+          Anthropic to your account.
+        </div>
+        <div class="modal__text">
+          <strong>Privacy:</strong> Your API key is stored only in your browser's LocalStorage. It
+          is never sent to our servers. Screenshots are sent directly from your browser to
+          Anthropic's API.
+        </div>
+
+        <div class="modal__input-group">
+          <label class="modal__label" for="api-key-input">Anthropic API Key</label>
+          <input
+            class="modal__input"
+            id="api-key-input"
+            type="password"
+            placeholder="sk-ant-..."
+            autocomplete="off"
+          />
+          <div class="modal__error" id="api-key-error">API key must start with sk-ant-</div>
+        </div>
+
+        <div class="modal__actions">
+          <button class="btn btn--primary" id="save-key-btn">Save Key Locally</button>
+          <button class="btn btn--ghost" id="remove-key-btn">Remove Key</button>
+          <button class="btn btn--ghost" id="close-modal-btn">Close</button>
+        </div>
+
+        <div class="modal__status" id="key-status"></div>
+
+        <a
+          class="modal__link"
+          href="https://console.anthropic.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Get an API key at console.anthropic.com &#8599;
+        </a>
+      </div>
+    </div>
+
+    <!-- ========== Footer ========== -->
+    <footer class="footer">
+      <p>OrgPulse is an independent open-source project. Not affiliated with Salesforce, Inc.</p>
+      <p style="margin-top: 0.5rem">
+        Built by
+        <a href="https://cramm.dev" target="_blank" rel="noopener">Christopher Ramm</a> &middot;
+        <a href="https://github.com/rammc/orgpulse" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </footer>
+
+    <script type="module" src="./js/matrix.js"></script>
+  </body>
+</html>
