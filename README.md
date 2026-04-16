@@ -133,4 +133,5 @@ MIT — see [LICENSE](LICENSE)
 Built by [Christopher Ramm](https://cramm.dev) — Salesforce CTA, Salesforce MVP (Class of 2025), and DCX CTO Germany at Capgemini.
 
 - [cramm.dev](https://cramm.dev)
+- [LinkedIn](https://www.linkedin.com/in/cramm/)
 - [GitHub](https://github.com/cramm)
