@@ -63,6 +63,7 @@ export async function analyzeWithVision(imageFile, onProgress = () => {}) {
       "observation": "<why this is healthy>"
     }
   ],
+  "layout_warning": "<optional string — set ONLY if the screenshot does not appear to be the standard Org Performance page>",
   "correlations": ["<describe correlations between metrics>"],
   "summary": "<overall assessment>"
 }`;
@@ -99,6 +100,12 @@ CHARTS (below counters, in order from top to bottom):
 - total_logins (5th chart: login counts per 10 minutes)
 - average_callout_time (6th chart: callout latency in milliseconds)
 - total_callout_errors_detail (7th chart: detailed callout error breakdown)
+
+IDENTIFICATION STRATEGY:
+1. PRIMARY: Identify charts by their position (top to bottom) using the known order listed above.
+2. VALIDATION: For each chart, also attempt to read the chart title text visible in the screenshot. If the title you can read CONTRADICTS the expected metric for that position, trust the readable title text and add a note in your observation field: "Position mismatch: expected [X] at position [N] but title reads [Y]".
+3. If you see FEWER charts than the 7 listed above (e.g., a partial screenshot or a different Scale Center page), STOP using positional identification entirely. Instead, identify charts solely by whatever title text you can read. For any chart where the title is unreadable, skip it rather than guess.
+4. If the screenshot does NOT appear to be the Scale Center Org Performance page (e.g., it shows Performance Analysis reports, ApexGuru insights, or a completely different layout), set a flag in your response: "layout_warning": "Screenshot does not appear to be the standard Org Performance page. Results may be less accurate."
 
 ANALYSIS RULES:
 1. Use ONLY the metric identifiers listed above. Never invent metric names.

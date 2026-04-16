@@ -120,11 +120,14 @@ export function validateVisionResponse(response) {
     }
   }
 
-  // 4. Pass through correlations and summary
+  // 4. Pass through correlations, summary, and layout warning
   if (Array.isArray(response.correlations)) {
     validated.correlations = response.correlations.map((c) => String(c));
   }
   validated.summary = String(response.summary || '');
+  if (response.layout_warning) {
+    validated.layout_warning = String(response.layout_warning);
+  }
 
   return validated;
 }

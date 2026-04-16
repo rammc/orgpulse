@@ -408,6 +408,11 @@ function bindUpload() {
       validationEl.innerHTML = '';
       validationEl.classList.remove('validation-info--visible');
     }
+    const layoutWarningEl = document.getElementById('layout-warning');
+    if (layoutWarningEl) {
+      layoutWarningEl.innerHTML = '';
+      layoutWarningEl.classList.remove('layout-warning--visible');
+    }
     applySeverityToMatrix({
       cells: recommendationsData.map((r) => ({
         id: r.id,
@@ -591,6 +596,19 @@ function displayResults() {
 
   const summary = document.getElementById('detection-summary');
   summary.classList.add('detection-summary--visible');
+
+  // Layout warning from Vision
+  const layoutWarningEl = document.getElementById('layout-warning');
+  if (layoutWarningEl) {
+    const deepWithWarning = accumulatedResults.find((r) => r.mode === 'deep' && r.layout_warning);
+    if (deepWithWarning) {
+      layoutWarningEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${deepWithWarning.layout_warning}`;
+      layoutWarningEl.classList.add('layout-warning--visible');
+    } else {
+      layoutWarningEl.innerHTML = '';
+      layoutWarningEl.classList.remove('layout-warning--visible');
+    }
+  }
 
   // Render counter cards from the latest basic result
   const basicResult = accumulatedResults.find((r) => r.mode === 'basic');

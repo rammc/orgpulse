@@ -856,6 +856,32 @@ h3 {
   opacity: 1;
 }
 
+/* ============ Layout Warning ============ */
+
+.layout-warning {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  margin-top: 2rem;
+  background: var(--yellow-bg);
+  border: 1px solid var(--yellow-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--yellow);
+  line-height: 1.5;
+}
+
+.layout-warning svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.layout-warning--visible {
+  display: flex;
+}
+
 /* ============ Healthy Banner ============ */
 
 .healthy-banner {
