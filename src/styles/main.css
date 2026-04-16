@@ -1438,6 +1438,53 @@ h3 {
   line-height: 1.6;
 }
 
+/* ============ Clearances ============ */
+
+.clearances {
+  display: none;
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+  border-radius: var(--radius-sm);
+}
+
+.clearances--visible {
+  display: block;
+}
+
+.clearances__title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.clearances__title svg {
+  width: 16px;
+  height: 16px;
+}
+
+.clearance-item {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.clearance-item__metric {
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* ============ Footer ============ */
 
 .footer {

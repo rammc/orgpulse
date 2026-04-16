@@ -39,15 +39,23 @@ export async function analyzeWithVision(imageFile, onProgress = () => {}) {
   "mode": "deep",
   "findings": [
     {
-      "metric": "string (e.g. ui_request_time, db_cpu_time, apex_execution_time, concurrent_requests, login_rate, callout_errors, row_locks)",
-      "severity": "warning|critical|info",
-      "observation": "string description of what you see",
+      "metric": "string (metric identifier)",
+      "severity": "info|warning|critical",
+      "root_cause_type": "compute|data|concurrency|integration|configuration",
+      "observation": "string (what you observed)",
+      "recommendation_hint": "string (brief suggestion for remediation)",
       "matrix_cell_id": "quick-wins|prioritize|strategic|take-along|evaluate|weigh-up|opportunistic|defer|skip",
       "confidence": 0.0 to 1.0
     }
   ],
-  "correlations": ["string descriptions of correlations between metrics"],
-  "summary": "string one-paragraph summary of the org's health"
+  "clearances": [
+    {
+      "metric": "string",
+      "observation": "string (why this is healthy)"
+    }
+  ],
+  "correlations": ["string (describe correlations between metrics)"],
+  "summary": "string (overall assessment)"
 }`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -60,9 +68,20 @@ export async function analyzeWithVision(imageFile, onProgress = () => {}) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1500,
-      system:
-        'You are an expert Salesforce Performance Engineer analyzing a Scale Center screenshot. Identify performance hotspots, anomalies in charts (CPU spikes, request time spikes, error patterns), and correlations between metrics. Return ONLY valid JSON matching the provided schema.',
+      max_tokens: 2000,
+      system: `You are an expert Salesforce Performance Engineer analyzing a Scale Center Org Performance screenshot.
+
+ANALYSIS RULES:
+1. Examine every chart and counter in the screenshot
+2. For each metric, classify it as either a FINDING (anomaly, spike, degradation, or concerning pattern) or a CLEARANCE (normal, healthy, flat, expected behavior)
+3. Only return FINDINGS in the "findings" array — these are things that need attention
+4. Return CLEARANCES in a separate "clearances" array — these confirm healthy areas
+5. Never score a healthy/normal metric as a finding
+6. For each FINDING, specify the root_cause_type: "compute", "data", "concurrency", "integration", or "configuration"
+
+CRITICAL: A metric showing flat, normal, or zero values is a CLEARANCE, not a FINDING. Do not include it in findings.
+
+Return ONLY valid JSON matching the provided schema.`,
       messages: [
         {
           role: 'user',
@@ -77,7 +96,7 @@ export async function analyzeWithVision(imageFile, onProgress = () => {}) {
             },
             {
               type: 'text',
-              text: `Analyze this Salesforce Scale Center screenshot. Identify all performance hotspots, anomalies, and issues visible in the charts and counters. For each finding, suggest which prioritization matrix cell it maps to based on estimated impact and remediation effort.\n\n${schemaDescription}`,
+              text: `Analyze this Salesforce Scale Center Org Performance screenshot. For each visible metric, classify it as a FINDING (anomaly/issue) or CLEARANCE (healthy). Map each finding to a prioritization matrix cell based on estimated impact and remediation effort.\n\n${schemaDescription}`,
             },
           ],
         },

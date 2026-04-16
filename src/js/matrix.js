@@ -341,6 +341,11 @@ function bindUpload() {
     document.getElementById('priority-ranking').classList.remove('priority-ranking--visible');
     document.getElementById('priority-ranking').innerHTML = '';
     document.getElementById('healthy-banner').classList.remove('healthy-banner--visible');
+    const clearancesEl = document.getElementById('clearances-section');
+    if (clearancesEl) {
+      clearancesEl.innerHTML = '';
+      clearancesEl.classList.remove('clearances--visible');
+    }
     applySeverityToMatrix({
       cells: recommendationsData.map((r) => ({
         id: r.id,
@@ -506,6 +511,27 @@ function displayResults() {
     parts.push(`AI Confidence (avg): ${Math.round(avgConf * 100)}%`);
   }
   confidenceEl.textContent = parts.join(' · ');
+
+  // Clearances from deep analysis
+  const clearancesContainer = document.getElementById('clearances-section');
+  if (clearancesContainer) {
+    const allClearances = accumulatedResults.flatMap((r) => r.clearances || []);
+    if (allClearances.length > 0) {
+      clearancesContainer.innerHTML = `
+        <div class="clearances__title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Healthy Areas
+        </div>
+        <div class="clearances__list">
+          ${allClearances.map((c) => `<div class="clearance-item"><span class="clearance-item__metric">${c.metric}</span><span class="clearance-item__text">${c.observation}</span></div>`).join('')}
+        </div>
+      `;
+      clearancesContainer.classList.add('clearances--visible');
+    } else {
+      clearancesContainer.innerHTML = '';
+      clearancesContainer.classList.remove('clearances--visible');
+    }
+  }
 
   // Calculate scores from all accumulated results
   currentScoreResult = calculateCellScores(accumulatedResults, recommendationsData);

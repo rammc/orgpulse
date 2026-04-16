@@ -67,6 +67,13 @@ export function calculateCellScores(analysisInput, recommendationsData) {
     }
   }
 
+  let clearances = [];
+  for (const r of results) {
+    if (r.clearances) {
+      clearances = clearances.concat(r.clearances);
+    }
+  }
+
   const cells = [];
   let totalScore = 0;
   let highestScore = 0;
@@ -109,6 +116,8 @@ export function calculateCellScores(analysisInput, recommendationsData) {
         severity: finding.severity || 'info',
         points,
         source: 'vision',
+        rootCauseType: finding.root_cause_type || null,
+        recommendationHint: finding.recommendation_hint || null,
       });
     }
 
@@ -137,6 +146,7 @@ export function calculateCellScores(analysisInput, recommendationsData) {
     highestSeverityCell,
     healthStatus: allZero ? 'healthy' : 'issues_detected',
     sources,
+    clearances,
     timestamp: new Date().toISOString(),
   };
 }
