@@ -1,7 +1,7 @@
 import { initSettings } from './settings.js';
 import { analyzeWithOCR } from './ocr.js';
 import { analyzeWithVision, getVisionErrorMessage } from './vision.js';
-import { matchRecommendations, generateSignals } from './recommendations.js';
+import { calculateCellScores, generateSignals } from './recommendations.js';
 
 // SVG Icons (Lucide-style, stroke-based)
 const ICONS = {
@@ -27,7 +27,9 @@ const ICONS = {
 let recommendationsData = [];
 let selectedFile = null;
 let analysisMode = 'basic';
-let currentHighlights = [];
+let currentScoreResult = null;
+let accumulatedResults = [];
+let lastFileKey = null;
 
 // Matrix layout: rows (top=high impact) x cols (left=low effort)
 const MATRIX_LAYOUT = [
@@ -70,7 +72,7 @@ function renderMatrix() {
       const iconSvg = ICONS[data.icon] || '';
 
       cell.innerHTML = `
-        <div class="matrix-cell__hit-count" id="hit-${cellId}">0</div>
+        <div class="matrix-cell__score-badge" id="badge-${cellId}"></div>
         <div class="matrix-cell__icon">${iconSvg}</div>
         <div class="matrix-cell__title">${data.title}</div>
         <div class="matrix-cell__label">${data.priority_label}</div>
@@ -82,23 +84,108 @@ function renderMatrix() {
   }
 }
 
-function highlightCells(highlights) {
-  document.querySelectorAll('.matrix-cell--highlighted').forEach((el) => {
-    el.classList.remove('matrix-cell--highlighted');
+function applySeverityToMatrix(scoreResult) {
+  // Clear all severity classes
+  const severityClasses = [
+    'matrix-cell--severity-low',
+    'matrix-cell--severity-medium',
+    'matrix-cell--severity-high',
+  ];
+  document.querySelectorAll('.matrix-cell').forEach((el) => {
+    severityClasses.forEach((cls) => el.classList.remove(cls));
   });
 
-  currentHighlights = highlights;
+  // Apply severity classes based on scores
+  for (const cellScore of scoreResult.cells) {
+    if (cellScore.score === 0) continue;
+    const cellEl = document.querySelector(`[data-cell-id="${cellScore.id}"]`);
+    if (!cellEl) continue;
 
-  for (const { cellId, reasons } of highlights) {
-    const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
-    if (cell) {
-      cell.classList.add('matrix-cell--highlighted');
-      const hitCount = cell.querySelector('.matrix-cell__hit-count');
-      if (hitCount) {
-        hitCount.textContent = reasons.length;
-      }
+    cellEl.classList.add(`matrix-cell--severity-${cellScore.severityLevel}`);
+
+    const badge = cellEl.querySelector('.matrix-cell__score-badge');
+    if (badge) {
+      badge.textContent = cellScore.score;
     }
   }
+
+  // Healthy banner
+  const banner = document.getElementById('healthy-banner');
+  if (banner) {
+    banner.classList.toggle('healthy-banner--visible', scoreResult.healthStatus === 'healthy');
+  }
+}
+
+// ============ Priority Ranking ============
+
+function renderPriorityRanking(scoreResult) {
+  const container = document.getElementById('priority-ranking');
+  const rankedCells = scoreResult.cells
+    .filter((c) => c.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (rankedCells.length === 0) {
+    container.innerHTML = '';
+    container.classList.remove('priority-ranking--visible');
+    return;
+  }
+
+  const severityDotClass = {
+    high: 'severity-dot--high',
+    medium: 'severity-dot--medium',
+    low: 'severity-dot--low',
+  };
+
+  const items = rankedCells
+    .map((cellScore, index) => {
+      const cellData = recommendationsData.find((r) => r.id === cellScore.id);
+      if (!cellData) return '';
+
+      const signals = cellScore.matchedSignals
+        .map((s) => {
+          const val = s.value !== null ? ` (${s.value})` : '';
+          return `<span class="ranking-signal ranking-signal--${s.severity}">${s.metric}${val}</span>`;
+        })
+        .join('');
+
+      return `
+        <div class="ranking-item" data-cell-id="${cellScore.id}">
+          <div class="ranking-item__rank">${index + 1}</div>
+          <div class="ranking-item__dot ${severityDotClass[cellScore.severityLevel] || ''}"></div>
+          <div class="ranking-item__content">
+            <div class="ranking-item__header">
+              <span class="ranking-item__name">${cellData.title}</span>
+              <span class="ranking-item__score">Score: ${cellScore.score}</span>
+            </div>
+            <div class="ranking-item__signals">${signals}</div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  const sourcesHtml =
+    scoreResult.sources.length > 0
+      ? `<div class="ranking-sources">${scoreResult.sources.map((s) => `<span class="ranking-source">${s === 'basic' ? 'OCR Analysis' : 'Deep Analysis'}</span>`).join('')}</div>`
+      : '';
+
+  container.innerHTML = `
+    <div class="ranking-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Priority Ranking
+      ${sourcesHtml}
+    </div>
+    ${items}
+  `;
+  container.classList.add('priority-ranking--visible');
+
+  // Bind click handlers to ranking items
+  container.querySelectorAll('.ranking-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const cellId = el.dataset.cellId;
+      openDetailPanel(cellId);
+    });
+  });
 }
 
 // ============ Detail Panel ============
@@ -128,27 +215,52 @@ function openDetailPanel(cellId) {
   };
 
   const iconSvg = ICONS[data.icon] || '';
+  const cellScore = currentScoreResult
+    ? currentScoreResult.cells.find((c) => c.id === cellId)
+    : null;
+  const hasScore = cellScore && cellScore.score > 0;
+
+  const scoreHtml = hasScore
+    ? `<span class="detail-panel__score detail-panel__score--${cellScore.severityLevel}">Score: ${cellScore.score}</span>`
+    : '';
 
   title.innerHTML = `
     <span style="display:inline-flex;align-items:center;gap:0.4rem">
       <span style="display:inline-flex;width:20px;height:20px;color:var(--${data.color})">${iconSvg}</span>
       ${data.title}
+      ${scoreHtml}
     </span>
     <span class="detail-panel__priority" style="${colorStyle[data.color]}">${data.priority_label}</span>
   `;
 
-  const highlight = currentHighlights.find((h) => h.cellId === cellId);
-  const highlightHtml = highlight
-    ? `<div class="detail-panel__signals">
+  // Detected signals section
+  let signalsHtml = '';
+  if (hasScore) {
+    const rows = cellScore.matchedSignals
+      .map((s) => {
+        const valStr = s.value !== null ? s.value.toLocaleString() : 'detected';
+        const sourceLabel = s.source === 'vision' ? ' (AI)' : '';
+        return `
+          <div class="signal-row">
+            <span class="signal-row__metric">${s.metric}${sourceLabel}</span>
+            <span class="signal-row__value">${valStr}</span>
+            <span class="signal-row__severity signal-row__severity--${s.severity}">${s.severity}</span>
+            <span class="signal-row__points">+${s.points} pts</span>
+          </div>
+        `;
+      })
+      .join('');
+
+    signalsHtml = `
+      <div class="detail-panel__signals">
         <div class="detail-panel__signals-title">Detected signals</div>
-        <ul class="detail-panel__signals-list">
-          ${highlight.reasons.map((r) => `<li>${r}</li>`).join('')}
-        </ul>
-      </div>`
-    : '';
+        ${rows}
+      </div>
+    `;
+  }
 
   body.innerHTML = `
-    ${highlightHtml}
+    ${signalsHtml}
     <div class="detail-panel__hint">${data.scale_center_hint}</div>
     <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; line-height: 1.6;">${data.subtitle}</p>
     ${data.recommendations
@@ -218,17 +330,39 @@ function bindUpload() {
 
   clearBtn.addEventListener('click', () => {
     selectedFile = null;
+    lastFileKey = null;
+    accumulatedResults = [];
+    currentScoreResult = null;
     fileInput.value = '';
     previewBar.classList.remove('preview-bar--visible');
     document.getElementById('progress-bar').classList.remove('progress-bar--visible');
     document.getElementById('detection-summary').classList.remove('detection-summary--visible');
     document.getElementById('detail-panel').classList.remove('detail-panel--visible');
-    highlightCells([]);
+    document.getElementById('priority-ranking').classList.remove('priority-ranking--visible');
+    document.getElementById('priority-ranking').innerHTML = '';
+    document.getElementById('healthy-banner').classList.remove('healthy-banner--visible');
+    applySeverityToMatrix({
+      cells: recommendationsData.map((r) => ({
+        id: r.id,
+        score: 0,
+        severityLevel: 'none',
+        matchedSignals: [],
+      })),
+      healthStatus: 'none',
+    });
   });
 }
 
 function handleFile(file) {
   selectedFile = file;
+  const fileKey = `${file.name}:${file.size}:${file.lastModified}`;
+
+  // New file → clear accumulated results
+  if (fileKey !== lastFileKey) {
+    accumulatedResults = [];
+    currentScoreResult = null;
+    lastFileKey = fileKey;
+  }
 
   const thumb = document.getElementById('preview-thumb');
   const name = document.getElementById('preview-name');
@@ -270,7 +404,6 @@ async function runAnalysis() {
   const progressFill = document.getElementById('progress-fill');
   const analyzeBtn = document.getElementById('analyze-btn');
 
-  // Reset progress bar styling
   progressFill.style.background = '';
   progressBar.classList.add('progress-bar--visible');
   analyzeBtn.disabled = true;
@@ -289,7 +422,11 @@ async function runAnalysis() {
       result = await analyzeWithVision(selectedFile, onProgress);
     }
 
-    displayResults(result);
+    // Merge: replace result for same mode, keep other mode's result
+    accumulatedResults = accumulatedResults.filter((r) => r.mode !== result.mode);
+    accumulatedResults.push(result);
+
+    displayResults();
   } catch (error) {
     progressLabel.textContent =
       analysisMode === 'deep' ? getVisionErrorMessage(error) : `Analysis failed: ${error.message}`;
@@ -306,14 +443,18 @@ async function runAnalysis() {
   }
 }
 
-function displayResults(result) {
+function displayResults() {
   document.getElementById('progress-bar').classList.remove('progress-bar--visible');
 
   const summary = document.getElementById('detection-summary');
   summary.classList.add('detection-summary--visible');
 
+  // Render counter cards from the latest basic result
+  const basicResult = accumulatedResults.find((r) => r.mode === 'basic');
+  const deepResult = accumulatedResults.find((r) => r.mode === 'deep');
   const counterContainer = document.getElementById('counter-cards');
-  if (result.mode === 'basic') {
+
+  if (basicResult) {
     const counterLabels = {
       successful_logins: 'Successful Logins',
       failed_logins: 'Failed Logins',
@@ -323,7 +464,7 @@ function displayResults(result) {
       total_callout_errors: 'Total Callout Errors',
     };
 
-    counterContainer.innerHTML = Object.entries(result.counters)
+    counterContainer.innerHTML = Object.entries(basicResult.counters)
       .map(([key, value]) => {
         let severity = 'ok';
         if (key !== 'successful_logins' && value > 0) {
@@ -337,32 +478,43 @@ function displayResults(result) {
         `;
       })
       .join('');
-  } else {
+  } else if (deepResult) {
     counterContainer.innerHTML = `
       <div style="grid-column: 1 / -1; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
-        ${result.summary || 'Analysis complete.'}
+        ${deepResult.summary || 'Analysis complete.'}
       </div>
     `;
   }
 
-  const signals = generateSignals(result);
+  // Signals from all accumulated results
+  const signals = generateSignals(accumulatedResults, recommendationsData);
   const signalContainer = document.getElementById('signal-tags');
   signalContainer.innerHTML = signals
     .map((s) => `<span class="signal-tag signal-tag--${s.severity}">${s.text}</span>`)
     .join('');
 
+  // Confidence
   const confidenceEl = document.getElementById('confidence-text');
-  if (result.confidence !== undefined) {
-    confidenceEl.textContent = `OCR Confidence: ${Math.round(result.confidence * 100)}%`;
-  } else if (result.findings) {
-    const avgConf =
-      result.findings.reduce((sum, f) => sum + (f.confidence || 0), 0) /
-      (result.findings.length || 1);
-    confidenceEl.textContent = `AI Confidence (avg): ${Math.round(avgConf * 100)}%`;
+  const parts = [];
+  if (basicResult && basicResult.confidence !== undefined) {
+    parts.push(`OCR Confidence: ${Math.round(basicResult.confidence * 100)}%`);
   }
+  if (deepResult && deepResult.findings) {
+    const avgConf =
+      deepResult.findings.reduce((sum, f) => sum + (f.confidence || 0), 0) /
+      (deepResult.findings.length || 1);
+    parts.push(`AI Confidence (avg): ${Math.round(avgConf * 100)}%`);
+  }
+  confidenceEl.textContent = parts.join(' · ');
 
-  const highlights = matchRecommendations(result, recommendationsData);
-  highlightCells(highlights);
+  // Calculate scores from all accumulated results
+  currentScoreResult = calculateCellScores(accumulatedResults, recommendationsData);
+
+  // Apply severity to matrix cells
+  applySeverityToMatrix(currentScoreResult);
+
+  // Render priority ranking
+  renderPriorityRanking(currentScoreResult);
 
   document.getElementById('matrix-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

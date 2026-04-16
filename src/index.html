@@ -137,8 +137,25 @@
         <div class="detection-summary__confidence" id="confidence-text"></div>
       </section>
 
+      <!-- Priority Ranking (populated by JS after analysis) -->
+      <section class="priority-ranking" id="priority-ranking"></section>
+
       <!-- Matrix -->
       <section class="matrix-section" id="matrix-section">
+        <div class="healthy-banner" id="healthy-banner">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          No issues detected — your org looks healthy based on the analyzed metrics.
+        </div>
         <h2 class="matrix-section__title">Prioritization Matrix</h2>
         <p class="matrix-section__subtitle">
           Impact vs. Effort &mdash; click any cell for detailed recommendations

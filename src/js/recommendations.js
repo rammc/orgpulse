@@ -1,113 +1,210 @@
+// Score-to-severity-level mapping
+const SEVERITY_LEVELS = { NONE: 'none', LOW: 'low', MEDIUM: 'medium', HIGH: 'high' };
+const VISION_SEVERITY_POINTS = { info: 1, warning: 3, critical: 5 };
+
+function scoreTolevel(score) {
+  if (score === 0) return SEVERITY_LEVELS.NONE;
+  if (score <= 3) return SEVERITY_LEVELS.LOW;
+  if (score <= 7) return SEVERITY_LEVELS.MEDIUM;
+  return SEVERITY_LEVELS.HIGH;
+}
+
 /**
- * Match analysis results to matrix cell recommendations.
- *
- * @param {object} analysisResult - Output from OCR or Vision analysis
- * @param {Array} recommendationsData - The full recommendations.json array
- * @returns {Array<{cellId: string, reasons: string[]}>} Cells to highlight with reasons
+ * Evaluate a counter value against a trigger signal's thresholds.
+ * Returns { severity, points } or null if no match.
  */
-export function matchRecommendations(analysisResult, recommendationsData) {
-  const highlights = new Map(); // cellId -> Set of reasons
+function evaluateMetricSignal(value, signal) {
+  if (value <= 0) return null;
 
-  function addHighlight(cellId, reason) {
-    if (!highlights.has(cellId)) {
-      highlights.set(cellId, new Set());
+  // New format: thresholds + points
+  if (signal.thresholds && signal.points) {
+    for (const level of ['critical', 'warning', 'info']) {
+      const t = signal.thresholds[level];
+      if (!t) continue;
+      const min = t.min || 0;
+      const max = t.max || Infinity;
+      if (value >= min && value <= max) {
+        return { severity: level, points: signal.points[level] || 1 };
+      }
     }
-    highlights.get(cellId).add(reason);
+    return null;
   }
 
-  if (analysisResult.mode === 'basic') {
-    const c = analysisResult.counters;
+  // Legacy format: no thresholds → binary match, 1 point
+  return { severity: 'info', points: 1 };
+}
 
-    if (c.concurrent_apex_errors > 0) {
-      addHighlight('quick-wins', `Concurrent Apex Errors: ${c.concurrent_apex_errors}`);
-      addHighlight('prioritize', `Concurrent Apex Errors: ${c.concurrent_apex_errors}`);
+/**
+ * Get a counter value from the analysis result by metric name.
+ */
+function getCounterValue(counters, metric) {
+  if (!counters) return 0;
+  return counters[metric] || 0;
+}
+
+/**
+ * Calculate scored results for all matrix cells.
+ *
+ * @param {object|object[]} analysisInput - Single result or array of results to merge
+ * @param {Array} recommendationsData - The full recommendations.json array
+ * @returns {object} Scored result with cells, totalScore, healthStatus, etc.
+ */
+export function calculateCellScores(analysisInput, recommendationsData) {
+  // Normalize input: merge multiple results into combined counters + findings
+  const results = Array.isArray(analysisInput) ? analysisInput : [analysisInput];
+  let counters = null;
+  let findings = [];
+  const sources = [];
+
+  for (const r of results) {
+    if (r.mode === 'basic' && r.counters) {
+      counters = r.counters;
+      if (!sources.includes('basic')) sources.push('basic');
     }
-
-    if (c.row_lock_errors > 0) {
-      addHighlight('prioritize', `Row Lock Errors: ${c.row_lock_errors}`);
-    }
-
-    if (c.total_callout_errors > 0) {
-      addHighlight('evaluate', `Total Callout Errors: ${c.total_callout_errors}`);
-      addHighlight('take-along', `Callout Errors detected: ${c.total_callout_errors}`);
-    }
-
-    if (c.failed_logins > 0) {
-      addHighlight('evaluate', `Failed Logins: ${c.failed_logins}`);
-    }
-
-    if (c.concurrent_ui_errors > 0) {
-      addHighlight('weigh-up', `Concurrent UI Errors: ${c.concurrent_ui_errors}`);
-    }
-
-    // High login count may indicate scaling needs
-    if (c.successful_logins > 1000) {
-      addHighlight('strategic', `High login volume: ${c.successful_logins}`);
+    if (r.mode === 'deep' && r.findings) {
+      findings = findings.concat(r.findings);
+      if (!sources.includes('deep')) sources.push('deep');
     }
   }
 
-  if (analysisResult.mode === 'deep' && analysisResult.findings) {
-    for (const finding of analysisResult.findings) {
-      if (finding.matrix_cell_id) {
-        const cellExists = recommendationsData.some((r) => r.id === finding.matrix_cell_id);
-        if (cellExists) {
-          const severity =
-            finding.severity === 'critical' ? '🔴' : finding.severity === 'warning' ? '🟡' : '🔵';
-          addHighlight(finding.matrix_cell_id, `${severity} ${finding.observation}`);
+  const cells = [];
+  let totalScore = 0;
+  let highestScore = 0;
+  let highestSeverityCell = null;
+
+  for (const cell of recommendationsData) {
+    const matchedSignals = [];
+
+    // Evaluate metric-based trigger signals against counters
+    if (counters) {
+      for (const signal of cell.trigger_signals) {
+        if (!signal.metric) continue;
+        const value = getCounterValue(counters, signal.metric);
+        const result = evaluateMetricSignal(value, signal);
+        if (result) {
+          matchedSignals.push({
+            metric: signal.metric,
+            value,
+            severity: result.severity,
+            points: result.points,
+          });
         }
+      }
+    }
+
+    // Evaluate vision findings that reference this cell
+    for (const finding of findings) {
+      if (finding.matrix_cell_id !== cell.id) continue;
+      const cellExists = recommendationsData.some((r) => r.id === finding.matrix_cell_id);
+      if (!cellExists) {
+        console.warn(
+          `OrgPulse: Vision finding references unknown cell "${finding.matrix_cell_id}"`
+        );
+        continue;
+      }
+      const points = VISION_SEVERITY_POINTS[finding.severity] || 1;
+      matchedSignals.push({
+        metric: finding.metric || finding.observation,
+        value: null,
+        severity: finding.severity || 'info',
+        points,
+        source: 'vision',
+      });
+    }
+
+    const score = matchedSignals.reduce((sum, s) => sum + s.points, 0);
+    const severityLevel = scoreTolevel(score);
+
+    cells.push({
+      id: cell.id,
+      score,
+      severityLevel,
+      matchedSignals,
+    });
+
+    totalScore += score;
+    if (score > highestScore) {
+      highestScore = score;
+      highestSeverityCell = cell.id;
+    }
+  }
+
+  const allZero = cells.every((c) => c.score === 0);
+
+  return {
+    cells,
+    totalScore,
+    highestSeverityCell,
+    healthStatus: allZero ? 'healthy' : 'issues_detected',
+    sources,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Generate detection signals for the Detection Summary display.
+ * Uses JSON thresholds for severity determination.
+ */
+export function generateSignals(analysisInput, recommendationsData) {
+  const results = Array.isArray(analysisInput) ? analysisInput : [analysisInput];
+  const signals = [];
+
+  for (const analysisResult of results) {
+    if (analysisResult.mode === 'basic' && analysisResult.counters) {
+      const c = analysisResult.counters;
+      const allSignals = recommendationsData
+        ? recommendationsData.flatMap((r) => r.trigger_signals)
+        : [];
+
+      const counterLabels = {
+        concurrent_apex_errors: 'Concurrent Apex Errors',
+        row_lock_errors: 'Row Lock Errors',
+        concurrent_ui_errors: 'Concurrent UI Errors',
+        total_callout_errors: 'Callout Errors',
+        failed_logins: 'Failed Logins',
+        successful_logins: 'Active Logins',
+      };
+
+      for (const [key, label] of Object.entries(counterLabels)) {
+        const value = c[key] || 0;
+        if (value <= 0) continue;
+
+        // Find the best matching threshold across all cells for this metric
+        let bestSeverity = 'info';
+        for (const signal of allSignals) {
+          if (signal.metric !== key || !signal.thresholds) continue;
+          const result = evaluateMetricSignal(value, signal);
+          if (result) {
+            const rank = { critical: 3, warning: 2, info: 1 };
+            if ((rank[result.severity] || 0) > (rank[bestSeverity] || 0)) {
+              bestSeverity = result.severity;
+            }
+          }
+        }
+
+        signals.push({ text: `${label}: ${value}`, severity: bestSeverity });
+      }
+    }
+
+    if (analysisResult.mode === 'deep' && analysisResult.findings) {
+      for (const finding of analysisResult.findings) {
+        signals.push({ text: finding.observation, severity: finding.severity || 'info' });
       }
     }
   }
 
-  return Array.from(highlights.entries()).map(([cellId, reasons]) => ({
-    cellId,
-    reasons: Array.from(reasons),
-  }));
+  return signals;
 }
 
-/**
- * Generate detection signals from analysis results for display.
- */
-export function generateSignals(analysisResult) {
-  const signals = [];
-
-  if (analysisResult.mode === 'basic') {
-    const c = analysisResult.counters;
-
-    if (c.concurrent_apex_errors > 0) {
-      signals.push({
-        text: `Concurrent Apex Errors: ${c.concurrent_apex_errors}`,
-        severity: 'critical',
-      });
-    }
-    if (c.row_lock_errors > 0) {
-      signals.push({ text: `Row Lock Errors: ${c.row_lock_errors}`, severity: 'critical' });
-    }
-    if (c.concurrent_ui_errors > 0) {
-      signals.push({
-        text: `Concurrent UI Errors: ${c.concurrent_ui_errors}`,
-        severity: 'warning',
-      });
-    }
-    if (c.total_callout_errors > 0) {
-      signals.push({ text: `Callout Errors: ${c.total_callout_errors}`, severity: 'warning' });
-    }
-    if (c.failed_logins > 0) {
-      signals.push({ text: `Failed Logins: ${c.failed_logins}`, severity: 'warning' });
-    }
-    if (c.successful_logins > 0) {
-      signals.push({ text: `Active Logins: ${c.successful_logins}`, severity: 'info' });
-    }
-  }
-
-  if (analysisResult.mode === 'deep' && analysisResult.findings) {
-    for (const finding of analysisResult.findings) {
-      signals.push({
-        text: finding.observation,
-        severity: finding.severity,
-      });
-    }
-  }
-
-  return signals;
+// Keep for backward compatibility — delegates to calculateCellScores
+export function matchRecommendations(analysisResult, recommendationsData) {
+  const scoreResult = calculateCellScores(analysisResult, recommendationsData);
+  return scoreResult.cells
+    .filter((c) => c.score > 0)
+    .map((c) => ({
+      cellId: c.id,
+      reasons: c.matchedSignals.map(
+        (s) => `${s.metric}: ${s.value !== null ? s.value : 'detected'} (${s.severity})`
+      ),
+    }));
 }

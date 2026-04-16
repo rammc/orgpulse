@@ -9,7 +9,24 @@
     "subtitle": "Maximum performance impact with minimal effort — can be implemented immediately without release risk.",
     "scale_center_hint": "Scale Center \u2192 Data Storage & API Usage reveals which objects hold the most records and where unselective queries are running.",
     "trigger_signals": [
-      { "metric": "db_cpu_time", "threshold": "high" },
+      {
+        "metric": "concurrent_apex_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 5 },
+          "warning": { "min": 6, "max": 25 },
+          "critical": { "min": 26 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
+      {
+        "metric": "row_lock_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 3 },
+          "warning": { "min": 4, "max": 15 },
+          "critical": { "min": 16 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
       { "keywords": ["full table scan", "slow soql"] }
     ],
     "recommendations": [
@@ -55,8 +72,24 @@
     "subtitle": "High performance impact with moderate effort — schedule for the next sprint or release cycle.",
     "scale_center_hint": "Scale Center \u2192 Apex Executions & Concurrent Requests show how close you are to Apex Governor Limits and where concurrency bottlenecks exist.",
     "trigger_signals": [
-      { "metric": "concurrent_apex_errors", "threshold": "> 0" },
-      { "metric": "row_lock_errors", "threshold": "> 0" },
+      {
+        "metric": "concurrent_apex_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 5 },
+          "warning": { "min": 6, "max": 25 },
+          "critical": { "min": 26 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
+      {
+        "metric": "row_lock_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 3 },
+          "warning": { "min": 4, "max": 15 },
+          "critical": { "min": 16 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
       { "keywords": ["governor limit", "apex cpu", "row lock"] }
     ],
     "recommendations": [
@@ -107,7 +140,15 @@
     "subtitle": "High performance impact but significant effort required — plan as a strategic initiative with a clear business case.",
     "scale_center_hint": "Scale Center \u2192 cross-metric trends (login growth, storage growth, API usage trajectory) indicate whether a strategic architectural change is needed.",
     "trigger_signals": [
-      { "metric": "successful_logins", "threshold": "high_growth" },
+      {
+        "metric": "successful_logins",
+        "thresholds": {
+          "info": { "min": 500, "max": 2000 },
+          "warning": { "min": 2001, "max": 10000 },
+          "critical": { "min": 10001 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
       { "keywords": ["architecture", "migration", "platform event"] }
     ],
     "recommendations": [
@@ -153,7 +194,15 @@
     "subtitle": "Moderate impact with low effort — include in your next deployment when you're already working in the area.",
     "scale_center_hint": "Scale Center \u2192 API Usage shows callout volume and which Connected Apps generate the most requests.",
     "trigger_signals": [
-      { "metric": "total_callout_errors", "threshold": "> 0" },
+      {
+        "metric": "total_callout_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 10 },
+          "warning": { "min": 11, "max": 50 },
+          "critical": { "min": 51 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
       { "keywords": ["callout", "api usage", "connected app"] }
     ],
     "recommendations": [
@@ -188,8 +237,24 @@
     "subtitle": "Moderate impact with moderate effort — conduct a detailed evaluation before committing resources.",
     "scale_center_hint": "Scale Center \u2192 Login Metrics & Failed Logins reveal authentication issues and potentially unauthorized access attempts.",
     "trigger_signals": [
-      { "metric": "failed_logins", "threshold": "> 0" },
-      { "metric": "total_callout_errors", "threshold": "moderate" },
+      {
+        "metric": "failed_logins",
+        "thresholds": {
+          "info": { "min": 1, "max": 20 },
+          "warning": { "min": 21, "max": 100 },
+          "critical": { "min": 101 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
+      {
+        "metric": "total_callout_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 10 },
+          "warning": { "min": 11, "max": 50 },
+          "critical": { "min": 51 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
       { "keywords": ["login failure", "auth", "callout error"] }
     ],
     "recommendations": [
@@ -229,7 +294,15 @@
     "subtitle": "Moderate impact with high effort — only pursue with a clear ROI justification and stakeholder alignment.",
     "scale_center_hint": "Scale Center \u2192 Concurrent UI Errors indicate frontend performance issues that may point to deeper architectural concerns.",
     "trigger_signals": [
-      { "metric": "concurrent_ui_errors", "threshold": "> 0" },
+      {
+        "metric": "concurrent_ui_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 5 },
+          "warning": { "min": 6, "max": 20 },
+          "critical": { "min": 21 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
       { "keywords": ["ui error", "concurrent", "page timeout"] }
     ],
     "recommendations": [
