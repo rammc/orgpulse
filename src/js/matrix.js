@@ -468,7 +468,9 @@ function bindModeToggle() {
 
 // ============ Analysis ============
 
-function reconcileCounters(ocrCounters, visionCounters) {
+const OCR_CONFIDENCE_THRESHOLD = 0.5;
+
+function reconcileCounters(ocrCounters, visionCounters, ocrConfidence) {
   const ALL_COUNTERS = [
     'successful_logins',
     'failed_logins',
@@ -478,6 +480,7 @@ function reconcileCounters(ocrCounters, visionCounters) {
     'total_callout_errors',
   ];
   const reconciled = {};
+  const confPercent = Math.round((ocrConfidence || 0) * 100);
 
   for (const key of ALL_COUNTERS) {
     const ocrVal = ocrCounters?.[key];
@@ -488,7 +491,7 @@ function reconcileCounters(ocrCounters, visionCounters) {
     if (hasOcr && hasVision) {
       if (ocrVal === visionVal) {
         reconciled[key] = { value: ocrVal, source: 'both', confidence: 'high' };
-      } else {
+      } else if (ocrConfidence >= OCR_CONFIDENCE_THRESHOLD) {
         reconciled[key] = {
           value: ocrVal,
           source: 'ocr_preferred',
@@ -496,6 +499,20 @@ function reconcileCounters(ocrCounters, visionCounters) {
           ocrValue: ocrVal,
           visionValue: visionVal,
         };
+        console.info(
+          `[OrgPulse] Counter reconciliation: ${key} — OCR: ${ocrVal} (conf: ${confPercent}%), Vision: ${visionVal} → OCR preferred (above ${OCR_CONFIDENCE_THRESHOLD * 100}% threshold)`
+        );
+      } else {
+        reconciled[key] = {
+          value: visionVal,
+          source: 'vision_preferred',
+          confidence: 'medium',
+          ocrValue: ocrVal,
+          visionValue: visionVal,
+        };
+        console.info(
+          `[OrgPulse] Counter reconciliation: ${key} — OCR: ${ocrVal} (conf: ${confPercent}%), Vision: ${visionVal} → Vision preferred (OCR below ${OCR_CONFIDENCE_THRESHOLD * 100}% threshold)`
+        );
       }
     } else if (hasOcr) {
       reconciled[key] = { value: ocrVal, source: 'ocr', confidence: 'medium' };
@@ -547,9 +564,13 @@ async function runAnalysis() {
         onProgress(0.3 + v * 0.7, l); // Vision takes remaining 70%
       });
 
-      // Reconcile counters: OCR preferred for counter values
+      // Reconcile counters: prefer OCR only when confidence is above threshold
       if (ocrResult && visionResult.counters) {
-        const reconciled = reconcileCounters(ocrResult.counters, visionResult.counters);
+        const reconciled = reconcileCounters(
+          ocrResult.counters,
+          visionResult.counters,
+          ocrResult.confidence
+        );
         visionResult.reconciledCounters = reconciled;
 
         // Build a basic-mode result from reconciled counters for scoring
@@ -643,6 +664,8 @@ function displayResults() {
               '<span class="counter-confidence counter-confidence--high" title="OCR and AI agree">&#10003;</span>';
           } else if (rc.source === 'ocr_preferred') {
             confidenceHtml = `<span class="counter-confidence counter-confidence--mismatch" title="OCR: ${rc.ocrValue}, AI: ${rc.visionValue} — OCR preferred">&#8800;</span>`;
+          } else if (rc.source === 'vision_preferred') {
+            confidenceHtml = `<span class="counter-confidence counter-confidence--mismatch" title="AI: ${rc.visionValue}, OCR: ${rc.ocrValue} — AI preferred, OCR confidence low">&#8800;</span>`;
           } else if (rc.source === 'vision') {
             confidenceHtml =
               '<span class="counter-confidence counter-confidence--ai" title="AI reading only">AI</span>';
