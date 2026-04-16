@@ -1,0 +1,162 @@
+<svg width="100%" viewBox="0 0 680 720" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>OrgPulse Architecture</title>
+<desc>Data flow from Scale Center screenshot upload through OCR and Vision analysis, validation, scoring, to the prioritization matrix.</desc>
+
+<style>
+  @media (prefers-color-scheme: light) {
+    .bg-upload { fill: #E1F5EE; stroke: #0F6E56; }
+    .tx-upload { fill: #085041; }
+    .txs-upload { fill: #0F6E56; }
+    .bg-basic { fill: #E6F1FB; stroke: #185FA5; }
+    .tx-basic { fill: #0C447C; }
+    .txs-basic { fill: #185FA5; }
+    .bg-deep { fill: #EEEDFE; stroke: #534AB7; }
+    .tx-deep { fill: #3C3489; }
+    .txs-deep { fill: #534AB7; }
+    .bg-gray { fill: #F1EFE8; stroke: #5F5E5A; }
+    .tx-gray { fill: #444441; }
+    .txs-gray { fill: #5F5E5A; }
+    .bg-score { fill: #FAEEDA; stroke: #854F0B; }
+    .tx-score { fill: #633806; }
+    .txs-score { fill: #854F0B; }
+    .bg-match { fill: #FAECE7; stroke: #993C1D; }
+    .tx-match { fill: #712B13; }
+    .txs-match { fill: #993C1D; }
+    .bg-output { fill: #E1F5EE; stroke: #0F6E56; }
+    .tx-output { fill: #085041; }
+    .txs-output { fill: #0F6E56; }
+    .bg-health { fill: #EAF3DE; stroke: #3B6D11; }
+    .txs-health { fill: #3B6D11; }
+    .arr-line { stroke: #888780; }
+    .ann-line { stroke: #888780; opacity: 0.3; }
+    .tx-ann-blue { fill: #185FA5; }
+    .tx-ann-amber { fill: #854F0B; }
+    .tx-sub { fill: #5F5E5A; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .bg-upload { fill: #085041; stroke: #5DCAA5; }
+    .tx-upload { fill: #9FE1CB; }
+    .txs-upload { fill: #5DCAA5; }
+    .bg-basic { fill: #0C447C; stroke: #85B7EB; }
+    .tx-basic { fill: #B5D4F4; }
+    .txs-basic { fill: #85B7EB; }
+    .bg-deep { fill: #3C3489; stroke: #AFA9EC; }
+    .tx-deep { fill: #CECBF6; }
+    .txs-deep { fill: #AFA9EC; }
+    .bg-gray { fill: #444441; stroke: #B4B2A9; }
+    .tx-gray { fill: #D3D1C7; }
+    .txs-gray { fill: #B4B2A9; }
+    .bg-score { fill: #633806; stroke: #FAC775; }
+    .tx-score { fill: #FAEEDA; }
+    .txs-score { fill: #FAC775; }
+    .bg-match { fill: #712B13; stroke: #F0997B; }
+    .tx-match { fill: #F5C4B3; }
+    .txs-match { fill: #F0997B; }
+    .bg-output { fill: #085041; stroke: #5DCAA5; }
+    .tx-output { fill: #9FE1CB; }
+    .txs-output { fill: #5DCAA5; }
+    .bg-health { fill: #27500A; stroke: #97C459; }
+    .txs-health { fill: #C0DD97; }
+    .arr-line { stroke: #B4B2A9; }
+    .ann-line { stroke: #B4B2A9; opacity: 0.3; }
+    .tx-ann-blue { fill: #85B7EB; }
+    .tx-ann-amber { fill: #FAC775; }
+    .tx-sub { fill: #B4B2A9; }
+  }
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .t14b { font-size: 14px; font-weight: 500; }
+  .t12 { font-size: 12px; font-weight: 400; }
+</style>
+
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+
+<!-- Row 1: Screenshot Upload -->
+<rect class="bg-upload" x="220" y="30" width="240" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-upload" x="340" y="50" text-anchor="middle" dominant-baseline="central">Screenshot upload</text>
+<text class="t12 txs-upload" x="340" y="68" text-anchor="middle" dominant-baseline="central">Scale Center PNG / JPG</text>
+
+<!-- Split arrows -->
+<line class="arr-line" x1="280" y1="86" x2="170" y2="128" stroke-width="1" marker-end="url(#arrow)"/>
+<line class="arr-line" x1="400" y1="86" x2="510" y2="128" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- Row 2: Basic Mode (left) -->
+<rect class="bg-basic" x="70" y="130" width="200" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-basic" x="170" y="150" text-anchor="middle" dominant-baseline="central">Basic mode (free)</text>
+<text class="t12 txs-basic" x="170" y="168" text-anchor="middle" dominant-baseline="central">Tesseract.js OCR</text>
+
+<!-- Row 2: Deep Mode (right) -->
+<rect class="bg-deep" x="410" y="130" width="200" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-deep" x="510" y="150" text-anchor="middle" dominant-baseline="central">Deep analysis (~$0.02)</text>
+<text class="t12 txs-deep" x="510" y="168" text-anchor="middle" dominant-baseline="central">Claude Vision API (BYOK)</text>
+
+<!-- Sub-labels -->
+<text class="t12 tx-sub" x="170" y="210" text-anchor="middle">6 counter values</text>
+<text class="t12 tx-sub" x="510" y="210" text-anchor="middle">Chart patterns + correlations</text>
+
+<!-- Arrows down -->
+<line class="arr-line" x1="170" y1="218" x2="170" y2="248" stroke-width="1" marker-end="url(#arrow)"/>
+<line class="arr-line" x1="510" y1="218" x2="510" y2="248" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- Row 3: Counter Reconciliation (left) -->
+<rect class="bg-gray" x="70" y="250" width="200" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-gray" x="170" y="270" text-anchor="middle" dominant-baseline="central">Counter reconciliation</text>
+<text class="t12 txs-gray" x="170" y="288" text-anchor="middle" dominant-baseline="central">Confidence-aware merge</text>
+
+<!-- Row 3: Metric Validation (right) -->
+<rect class="bg-gray" x="410" y="250" width="200" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-gray" x="510" y="270" text-anchor="middle" dominant-baseline="central">Metric validation</text>
+<text class="t12 txs-gray" x="510" y="288" text-anchor="middle" dominant-baseline="central">Known vocabulary only</text>
+
+<!-- Merge arrows -->
+<line class="arr-line" x1="170" y1="306" x2="170" y2="340" stroke-width="1" fill="none"/>
+<line class="arr-line" x1="510" y1="306" x2="510" y2="340" stroke-width="1" fill="none"/>
+<line class="arr-line" x1="170" y1="340" x2="510" y2="340" stroke-width="1" fill="none"/>
+<line class="arr-line" x1="340" y1="340" x2="340" y2="368" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- Row 4: Scoring -->
+<rect class="bg-score" x="190" y="370" width="300" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-score" x="340" y="390" text-anchor="middle" dominant-baseline="central">Severity scoring engine</text>
+<text class="t12 txs-score" x="340" y="408" text-anchor="middle" dominant-baseline="central">Thresholds → points → cell scores</text>
+
+<!-- Arrow down -->
+<line class="arr-line" x1="340" y1="426" x2="340" y2="468" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- Row 5: Recommendation Matching -->
+<rect class="bg-match" x="170" y="470" width="340" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-match" x="340" y="490" text-anchor="middle" dominant-baseline="central">Recommendation matching</text>
+<text class="t12 txs-match" x="340" y="508" text-anchor="middle" dominant-baseline="central">Filter by signals + root cause types</text>
+
+<!-- Fan arrows to outputs -->
+<line class="arr-line" x1="260" y1="526" x2="130" y2="568" stroke-width="1" marker-end="url(#arrow)"/>
+<line class="arr-line" x1="340" y1="526" x2="340" y2="568" stroke-width="1" marker-end="url(#arrow)"/>
+<line class="arr-line" x1="420" y1="526" x2="550" y2="568" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- Row 6: Three outputs -->
+<rect class="bg-output" x="40" y="570" width="180" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-output" x="130" y="590" text-anchor="middle" dominant-baseline="central">Priority ranking</text>
+<text class="t12 txs-output" x="130" y="608" text-anchor="middle" dominant-baseline="central">Sorted by cell score</text>
+
+<rect class="bg-output" x="250" y="570" width="180" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-output" x="340" y="590" text-anchor="middle" dominant-baseline="central">9-field matrix</text>
+<text class="t12 txs-output" x="340" y="608" text-anchor="middle" dominant-baseline="central">Visual severity levels</text>
+
+<rect class="bg-output" x="460" y="570" width="180" height="56" rx="8" stroke-width="0.5"/>
+<text class="t14b tx-output" x="550" y="590" text-anchor="middle" dominant-baseline="central">AI insights</text>
+<text class="t12 txs-output" x="550" y="608" text-anchor="middle" dominant-baseline="central">Contextual hints</text>
+
+<!-- Side annotation: Privacy (left) -->
+<rect class="ann-line" x="42" y="130" width="3" height="176" rx="1.5" fill="currentColor"/>
+<text class="t12 tx-ann-blue" x="30" y="220" text-anchor="end">runs in browser</text>
+
+<!-- Side annotation: BYOK (right) -->
+<rect class="ann-line" x="635" y="130" width="3" height="176" rx="1.5" fill="currentColor"/>
+<text class="t12 tx-ann-amber" x="648" y="220" text-anchor="start">your API key</text>
+
+<!-- Bottom: Clearances -->
+<line class="arr-line" x1="340" y1="626" x2="340" y2="658" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<rect class="bg-health" x="220" y="660" width="240" height="40" rx="8" stroke-width="0.5"/>
+<text class="t12 txs-health" x="340" y="684" text-anchor="middle" dominant-baseline="central">Healthy metrics shown as clearances</text>
+
+</svg>

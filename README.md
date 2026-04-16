@@ -62,12 +62,11 @@ OrgPulse turns your Scale Center Org Performance screenshots into actionable opt
 5. **Scoring** evaluates findings against threshold-based severity rules and calculates a score per matrix cell
 6. **Prioritization** highlights the most critical cells, shows filtered recommendations matched to detected signals, and displays AI-generated contextual insights
 
-```
-Screenshot --> OCR (counters) + Vision (charts) --> Validation --> Scoring --> Matrix Highlighting
-                                                                                 |
-                                                                    Prioritized Recommendations
-                                                                    + AI Insights + Clearances
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="orgpulse-architecture.svg">
+  <source media="(prefers-color-scheme: light)" srcset="orgpulse-architecture.svg">
+  <img alt="OrgPulse Architecture — data flow from screenshot upload through OCR and Vision analysis, validation, scoring, to the prioritization matrix" src="orgpulse-architecture.svg" width="680">
+</picture>
 
 ## Quick Start
 
