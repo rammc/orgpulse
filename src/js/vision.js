@@ -59,7 +59,7 @@ export async function analyzeWithVision(imageFile, onProgress = () => {}) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6-20250514',
+      model: 'claude-sonnet-4-5-20241022',
       max_tokens: 1500,
       system:
         'You are an expert Salesforce Performance Engineer analyzing a Scale Center screenshot. Identify performance hotspots, anomalies in charts (CPU spikes, request time spikes, error patterns), and correlations between metrics. Return ONLY valid JSON matching the provided schema.',
