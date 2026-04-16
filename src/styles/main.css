@@ -1438,6 +1438,120 @@ h3 {
   line-height: 1.6;
 }
 
+/* ============ AI Insights ============ */
+
+.ai-insights {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--accent-border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.ai-insights__title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-insights__title svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ai-insights__label {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 100px;
+  background: var(--accent-bg);
+  color: var(--accent-muted);
+  border: 1px solid var(--accent-border);
+  margin-left: auto;
+}
+
+.ai-insights__hint {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 0.4rem;
+}
+
+.ai-insights__hint:last-child {
+  margin-bottom: 0;
+}
+
+.ai-insights__correlations {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ai-insights__correlations strong {
+  color: var(--text-dim);
+}
+
+/* ============ Recommendation Filtering ============ */
+
+.recs-count {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.recommendation-card--dimmed {
+  opacity: 0.45;
+}
+
+.recommendation-card--dimmed:hover {
+  opacity: 0.7;
+}
+
+.hidden-recs {
+  display: none;
+}
+
+.hidden-recs--visible {
+  display: block;
+}
+
+.show-all-toggle {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem 0;
+  margin-top: 0.5rem;
+  transition: opacity var(--transition);
+}
+
+.show-all-toggle:hover {
+  opacity: 0.8;
+}
+
+.no-recs-fallback {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+}
+
 /* ============ Clearances ============ */
 
 .clearances {

@@ -1,7 +1,12 @@
 import { initSettings } from './settings.js';
 import { analyzeWithOCR } from './ocr.js';
 import { analyzeWithVision, getVisionErrorMessage } from './vision.js';
-import { calculateCellScores, generateSignals } from './recommendations.js';
+import {
+  calculateCellScores,
+  generateSignals,
+  filterRecommendations,
+  getAIInsightsForCell,
+} from './recommendations.js';
 
 // SVG Icons (Lucide-style, stroke-based)
 const ICONS = {
@@ -196,6 +201,30 @@ function bindDetailPanel() {
   });
 }
 
+function renderRecommendationCard(rec, dimmed) {
+  return `
+    <div class="recommendation-card${dimmed ? ' recommendation-card--dimmed' : ''}">
+      <div class="recommendation-card__title">${rec.title}</div>
+      <div class="recommendation-card__body">${rec.body}</div>
+      <div class="recommendation-card__tags">
+        ${rec.tags.map((t) => `<span class="tag">${t}</span>`).join('')}
+      </div>
+      ${
+        rec.references && rec.references.length > 0
+          ? `<div class="recommendation-card__refs">
+              ${rec.references
+                .map(
+                  (ref) =>
+                    `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.type === 'official_docs' ? 'Salesforce Docs' : 'Reference'} &#8599;</a>`
+                )
+                .join(' ')}
+            </div>`
+          : ''
+      }
+    </div>
+  `;
+}
+
 function openDetailPanel(cellId) {
   const data = recommendationsData.find((r) => r.id === cellId);
   if (!data) return;
@@ -259,35 +288,63 @@ function openDetailPanel(cellId) {
     `;
   }
 
+  // AI Insights section (only for deep mode results)
+  let aiInsightsHtml = '';
+  if (accumulatedResults.length > 0) {
+    const { hints, correlations } = getAIInsightsForCell(cellId, accumulatedResults);
+    if (hints.length > 0) {
+      aiInsightsHtml = `
+        <div class="ai-insights">
+          <div class="ai-insights__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            AI Insights
+            <span class="ai-insights__label">Based on Deep Analysis</span>
+          </div>
+          <div class="ai-insights__content">
+            ${hints.map((h) => `<p class="ai-insights__hint">${h}</p>`).join('')}
+            ${correlations.length > 0 ? `<div class="ai-insights__correlations"><strong>Correlations:</strong> ${correlations.join(' · ')}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Recommendation filtering
+  let recsHtml = '';
+  if (hasScore && cellScore.matchedSignals.length > 0) {
+    const filtered = filterRecommendations(data, cellScore.matchedSignals);
+    const countLabel = `<div class="recs-count">${filtered.relevant.length} of ${filtered.totalCount} recommendations relevant to detected signals</div>`;
+
+    const relevantCards = filtered.relevant
+      .map((rec) => renderRecommendationCard(rec, false))
+      .join('');
+
+    let hiddenSection = '';
+    if (filtered.hidden.length > 0) {
+      const hiddenCards = filtered.hidden
+        .map((rec) => renderRecommendationCard(rec, true))
+        .join('');
+      hiddenSection = `
+        <button class="show-all-toggle" onclick="this.closest('.detail-panel__body').querySelector('.hidden-recs').classList.toggle('hidden-recs--visible'); this.textContent = this.textContent.includes('Show') ? 'Hide additional recommendations' : 'Show all recommendations for this cell'">
+          Show all recommendations for this cell
+        </button>
+        <div class="hidden-recs">${hiddenCards}</div>
+      `;
+    }
+
+    recsHtml = countLabel + relevantCards + hiddenSection;
+  } else if (data.recommendations.length > 0) {
+    recsHtml = data.recommendations.map((rec) => renderRecommendationCard(rec, false)).join('');
+  } else {
+    recsHtml = `<div class="no-recs-fallback">No specific recommendations for this cell.</div>`;
+  }
+
   body.innerHTML = `
     ${signalsHtml}
+    ${aiInsightsHtml}
     <div class="detail-panel__hint">${data.scale_center_hint}</div>
     <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; line-height: 1.6;">${data.subtitle}</p>
-    ${data.recommendations
-      .map(
-        (rec) => `
-      <div class="recommendation-card">
-        <div class="recommendation-card__title">${rec.title}</div>
-        <div class="recommendation-card__body">${rec.body}</div>
-        <div class="recommendation-card__tags">
-          ${rec.tags.map((t) => `<span class="tag">${t}</span>`).join('')}
-        </div>
-        ${
-          rec.references && rec.references.length > 0
-            ? `<div class="recommendation-card__refs">
-                ${rec.references
-                  .map(
-                    (ref) =>
-                      `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.type === 'official_docs' ? 'Salesforce Docs' : 'Reference'} &#8599;</a>`
-                  )
-                  .join(' ')}
-              </div>`
-            : ''
-        }
-      </div>
-    `
-      )
-      .join('')}
+    ${recsHtml}
   `;
 
   panel.classList.add('detail-panel--visible');

@@ -206,6 +206,69 @@ export function generateSignals(analysisInput, recommendationsData) {
   return signals;
 }
 
+/**
+ * Filter recommendations within a cell by matched signal relevance.
+ * Returns { relevant, hidden, totalCount }.
+ */
+export function filterRecommendations(cellData, matchedSignals) {
+  const detectedMetrics = new Set(matchedSignals.map((s) => s.metric));
+  const detectedRootCauses = new Set(
+    matchedSignals.filter((s) => s.rootCauseType).map((s) => s.rootCauseType)
+  );
+
+  const scored = cellData.recommendations.map((rec) => {
+    const signals = rec.relevant_signals || ['*'];
+    const rootCauses = rec.root_cause_types || [];
+    const isWildcard = signals.includes('*');
+    const signalMatch = isWildcard || signals.some((s) => detectedMetrics.has(s));
+    const rootCauseMatch =
+      rootCauses.length > 0 && rootCauses.some((rc) => detectedRootCauses.has(rc));
+
+    let relevanceScore = 0;
+    if (signalMatch && rootCauseMatch) relevanceScore = 3;
+    else if (signalMatch && !isWildcard) relevanceScore = 2;
+    else if (isWildcard) relevanceScore = 1;
+
+    return { rec, signalMatch, relevanceScore };
+  });
+
+  const relevant = scored
+    .filter((s) => s.signalMatch)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+  const hidden = scored.filter((s) => !s.signalMatch);
+
+  return {
+    relevant: relevant.map((s) => s.rec),
+    hidden: hidden.map((s) => s.rec),
+    totalCount: cellData.recommendations.length,
+  };
+}
+
+/**
+ * Get AI-generated insights (recommendation hints and correlations) for a specific cell.
+ */
+export function getAIInsightsForCell(cellId, results) {
+  const allResults = Array.isArray(results) ? results : [results];
+  const hints = [];
+  const correlations = [];
+
+  for (const r of allResults) {
+    if (r.mode !== 'deep') continue;
+    if (r.findings) {
+      for (const f of r.findings) {
+        if (f.matrix_cell_id === cellId && f.recommendation_hint) {
+          hints.push(f.recommendation_hint);
+        }
+      }
+    }
+    if (r.correlations) {
+      correlations.push(...r.correlations);
+    }
+  }
+
+  return { hints, correlations };
+}
+
 // Keep for backward compatibility — delegates to calculateCellScores
 export function matchRecommendations(analysisResult, recommendationsData) {
   const scoreResult = calculateCellScores(analysisResult, recommendationsData);
