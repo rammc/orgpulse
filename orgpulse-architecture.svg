@@ -147,12 +147,12 @@
 <text class="t12 txs-output" x="550" y="608" text-anchor="middle" dominant-baseline="central">Contextual hints</text>
 
 <!-- Side annotation: Privacy (left) -->
-<rect class="ann-line" x="42" y="130" width="3" height="176" rx="1.5" fill="currentColor"/>
-<text class="t12 tx-ann-blue" x="30" y="220" text-anchor="end">runs in browser</text>
+<rect class="ann-line" x="54" y="130" width="3" height="176" rx="1.5" fill="currentColor"/>
+<text class="t12 tx-ann-blue" x="50" y="220" text-anchor="end" transform="rotate(-90 50 220)">runs in browser</text>
 
 <!-- Side annotation: BYOK (right) -->
-<rect class="ann-line" x="635" y="130" width="3" height="176" rx="1.5" fill="currentColor"/>
-<text class="t12 tx-ann-amber" x="648" y="220" text-anchor="start">your API key</text>
+<rect class="ann-line" x="623" y="130" width="3" height="176" rx="1.5" fill="currentColor"/>
+<text class="t12 tx-ann-amber" x="630" y="220" text-anchor="middle" transform="rotate(90 630 220)">your API key</text>
 
 <!-- Bottom: Clearances -->
 <line class="arr-line" x1="340" y1="626" x2="340" y2="658" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
