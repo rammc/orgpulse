@@ -403,6 +403,11 @@ function bindUpload() {
       clearancesEl.innerHTML = '';
       clearancesEl.classList.remove('clearances--visible');
     }
+    const validationEl = document.getElementById('validation-info');
+    if (validationEl) {
+      validationEl.innerHTML = '';
+      validationEl.classList.remove('validation-info--visible');
+    }
     applySeverityToMatrix({
       cells: recommendationsData.map((r) => ({
         id: r.id,
@@ -587,6 +592,37 @@ function displayResults() {
     } else {
       clearancesContainer.innerHTML = '';
       clearancesContainer.classList.remove('clearances--visible');
+    }
+  }
+
+  // Validation info (show filtered findings count)
+  const validationEl = document.getElementById('validation-info');
+  if (validationEl) {
+    const deepResults = accumulatedResults.filter((r) => r.mode === 'deep' && r.validation);
+    const totalRejected = deepResults.reduce(
+      (sum, r) => sum + (r.validation.rejectedFindings?.length || 0),
+      0
+    );
+    const totalOriginal = deepResults.reduce(
+      (sum, r) => sum + (r.validation.originalFindingCount || 0),
+      0
+    );
+    if (totalRejected > 0) {
+      const rejectedItems = deepResults
+        .flatMap((r) => r.validation.rejectedFindings || [])
+        .map((f) => `<span class="validation-rejected-item">${f.metric}</span>`)
+        .join('');
+      validationEl.innerHTML = `
+        <div class="validation-info__text">
+          ${totalRejected} of ${totalOriginal} AI observations filtered out (unrecognized metrics).
+          <button class="validation-info__toggle" onclick="this.parentElement.nextElementSibling.classList.toggle('validation-rejected--visible'); this.textContent = this.textContent.includes('Show') ? 'Hide' : 'Show filtered'">Show filtered</button>
+        </div>
+        <div class="validation-rejected">${rejectedItems}</div>
+      `;
+      validationEl.classList.add('validation-info--visible');
+    } else {
+      validationEl.innerHTML = '';
+      validationEl.classList.remove('validation-info--visible');
     }
   }
 

@@ -1599,6 +1599,64 @@ h3 {
   white-space: nowrap;
 }
 
+/* ============ Validation Info ============ */
+
+.validation-info {
+  display: none;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.validation-info--visible {
+  display: block;
+}
+
+.validation-info__text {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.validation-info__toggle {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.7rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.validation-info__toggle:hover {
+  opacity: 0.8;
+}
+
+.validation-rejected:not(.validation-rejected--visible) {
+  display: none;
+}
+
+.validation-rejected--visible {
+  display: flex;
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.validation-rejected-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 100px;
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid var(--red-border);
+}
+
 /* ============ Footer ============ */
 
 .footer {

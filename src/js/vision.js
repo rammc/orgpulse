@@ -1,4 +1,5 @@
 import { getApiKey, hasApiKey } from './settings.js';
+import { validateVisionResponse } from './validation.js';
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -163,10 +164,25 @@ Return ONLY valid JSON matching the provided schema.`,
   }
 
   const result = JSON.parse(jsonStr);
-  result.timestamp = new Date().toISOString();
+
+  // Validate response against known metric vocabulary
+  const validated = validateVisionResponse(result);
+  validated.timestamp = new Date().toISOString();
+
+  // Log validation results
+  const v = validated.validation;
+  if (v.rejectedFindings.length > 0) {
+    console.warn(
+      `OrgPulse: Rejected ${v.rejectedFindings.length} of ${v.originalFindingCount} findings (unknown metrics):`,
+      v.rejectedFindings.map((f) => f.metric)
+    );
+  }
+  if (v.counterCorrections.length > 0) {
+    console.info('OrgPulse: Counter corrections:', v.counterCorrections);
+  }
 
   onProgress(1, 'Complete');
-  return result;
+  return validated;
 }
 
 /**
