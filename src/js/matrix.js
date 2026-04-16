@@ -463,6 +463,47 @@ function bindModeToggle() {
 
 // ============ Analysis ============
 
+function reconcileCounters(ocrCounters, visionCounters) {
+  const ALL_COUNTERS = [
+    'successful_logins',
+    'failed_logins',
+    'concurrent_apex_errors',
+    'concurrent_ui_errors',
+    'row_lock_errors',
+    'total_callout_errors',
+  ];
+  const reconciled = {};
+
+  for (const key of ALL_COUNTERS) {
+    const ocrVal = ocrCounters?.[key];
+    const visionVal = visionCounters?.[key];
+    const hasOcr = ocrVal !== null && ocrVal !== undefined;
+    const hasVision = visionVal !== null && visionVal !== undefined;
+
+    if (hasOcr && hasVision) {
+      if (ocrVal === visionVal) {
+        reconciled[key] = { value: ocrVal, source: 'both', confidence: 'high' };
+      } else {
+        reconciled[key] = {
+          value: ocrVal,
+          source: 'ocr_preferred',
+          confidence: 'medium',
+          ocrValue: ocrVal,
+          visionValue: visionVal,
+        };
+      }
+    } else if (hasOcr) {
+      reconciled[key] = { value: ocrVal, source: 'ocr', confidence: 'medium' };
+    } else if (hasVision) {
+      reconciled[key] = { value: visionVal, source: 'vision', confidence: 'low' };
+    } else {
+      reconciled[key] = { value: null, source: 'none', confidence: 'none' };
+    }
+  }
+
+  return reconciled;
+}
+
 async function runAnalysis() {
   if (!selectedFile) return;
 
@@ -481,17 +522,52 @@ async function runAnalysis() {
   }
 
   try {
-    let result;
-
     if (analysisMode === 'basic') {
-      result = await analyzeWithOCR(selectedFile, onProgress);
+      const result = await analyzeWithOCR(selectedFile, onProgress);
+      accumulatedResults = accumulatedResults.filter((r) => r.mode !== 'basic');
+      accumulatedResults.push(result);
     } else {
-      result = await analyzeWithVision(selectedFile, onProgress);
-    }
+      // Deep Analysis: auto-run OCR first for counter accuracy, then Vision
+      onProgress(0.02, 'Extracting counters via OCR...');
+      let ocrResult = null;
+      try {
+        ocrResult = await analyzeWithOCR(selectedFile, (v, l) => {
+          onProgress(v * 0.3, l); // OCR takes first 30% of progress
+        });
+      } catch (e) {
+        console.warn('OrgPulse: OCR pre-scan failed, continuing with Vision only:', e.message);
+      }
 
-    // Merge: replace result for same mode, keep other mode's result
-    accumulatedResults = accumulatedResults.filter((r) => r.mode !== result.mode);
-    accumulatedResults.push(result);
+      const visionResult = await analyzeWithVision(selectedFile, (v, l) => {
+        onProgress(0.3 + v * 0.7, l); // Vision takes remaining 70%
+      });
+
+      // Reconcile counters: OCR preferred for counter values
+      if (ocrResult && visionResult.counters) {
+        const reconciled = reconcileCounters(ocrResult.counters, visionResult.counters);
+        visionResult.reconciledCounters = reconciled;
+
+        // Build a basic-mode result from reconciled counters for scoring
+        const reconciledBasic = {
+          mode: 'basic',
+          counters: {},
+          confidence: ocrResult.confidence,
+          timestamp: ocrResult.timestamp,
+          source: 'reconciled',
+        };
+        for (const [key, entry] of Object.entries(reconciled)) {
+          reconciledBasic.counters[key] = entry.value !== null ? entry.value : 0;
+        }
+        accumulatedResults = accumulatedResults.filter((r) => r.mode !== 'basic');
+        accumulatedResults.push(reconciledBasic);
+      } else if (ocrResult) {
+        accumulatedResults = accumulatedResults.filter((r) => r.mode !== 'basic');
+        accumulatedResults.push(ocrResult);
+      }
+
+      accumulatedResults = accumulatedResults.filter((r) => r.mode !== 'deep');
+      accumulatedResults.push(visionResult);
+    }
 
     displayResults();
   } catch (error) {
@@ -531,26 +607,74 @@ function displayResults() {
       total_callout_errors: 'Total Callout Errors',
     };
 
+    // Check if we have reconciled counters from deep analysis
+    const reconciled = deepResult?.reconciledCounters;
+
     counterContainer.innerHTML = Object.entries(basicResult.counters)
       .map(([key, value]) => {
         let severity = 'ok';
         if (key !== 'successful_logins' && value > 0) {
           severity = value > 10 ? 'critical' : 'warning';
         }
+
+        let confidenceHtml = '';
+        if (reconciled && reconciled[key]) {
+          const rc = reconciled[key];
+          if (rc.source === 'both') {
+            confidenceHtml =
+              '<span class="counter-confidence counter-confidence--high" title="OCR and AI agree">&#10003;</span>';
+          } else if (rc.source === 'ocr_preferred') {
+            confidenceHtml = `<span class="counter-confidence counter-confidence--mismatch" title="OCR: ${rc.ocrValue}, AI: ${rc.visionValue} — OCR preferred">&#8800;</span>`;
+          } else if (rc.source === 'vision') {
+            confidenceHtml =
+              '<span class="counter-confidence counter-confidence--ai" title="AI reading only">AI</span>';
+          }
+        }
+
+        const displayVal = value !== null ? value.toLocaleString() : '—';
+
         return `
           <div class="counter-card counter-card--${severity}">
             <div class="counter-card__label">${counterLabels[key]}</div>
-            <div class="counter-card__value">${value.toLocaleString()}</div>
+            <div class="counter-card__value">${displayVal} ${confidenceHtml}</div>
           </div>
         `;
       })
       .join('');
   } else if (deepResult) {
-    counterContainer.innerHTML = `
-      <div style="grid-column: 1 / -1; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
-        ${deepResult.summary || 'Analysis complete.'}
-      </div>
-    `;
+    // Deep-only with Vision counters but no OCR
+    const counterLabels = {
+      successful_logins: 'Successful Logins',
+      failed_logins: 'Failed Logins',
+      concurrent_apex_errors: 'Concurrent Apex Errors',
+      concurrent_ui_errors: 'Concurrent UI Errors',
+      row_lock_errors: 'Row Lock Errors',
+      total_callout_errors: 'Total Callout Errors',
+    };
+    if (deepResult.counters && Object.keys(deepResult.counters).length > 0) {
+      counterContainer.innerHTML = Object.entries(counterLabels)
+        .map(([key, label]) => {
+          const value = deepResult.counters[key];
+          const displayVal = value !== null && value !== undefined ? value.toLocaleString() : '—';
+          let severity = 'ok';
+          if (key !== 'successful_logins' && value > 0) {
+            severity = value > 10 ? 'critical' : 'warning';
+          }
+          return `
+            <div class="counter-card counter-card--${severity}">
+              <div class="counter-card__label">${label}</div>
+              <div class="counter-card__value">${displayVal} <span class="counter-confidence counter-confidence--ai" title="AI reading only">AI</span></div>
+            </div>
+          `;
+        })
+        .join('');
+    } else {
+      counterContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
+          ${deepResult.summary || 'Analysis complete.'}
+        </div>
+      `;
+    }
   }
 
   // Signals from all accumulated results

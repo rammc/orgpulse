@@ -1599,6 +1599,35 @@ h3 {
   white-space: nowrap;
 }
 
+/* ============ Counter Confidence ============ */
+
+.counter-confidence {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+}
+
+.counter-confidence--high {
+  color: var(--green);
+}
+
+.counter-confidence--mismatch {
+  color: var(--yellow);
+  cursor: help;
+}
+
+.counter-confidence--ai {
+  font-size: 0.55rem;
+  padding: 0.05rem 0.25rem;
+  border-radius: 100px;
+  background: var(--accent-bg);
+  color: var(--accent-muted);
+  border: 1px solid var(--accent-border);
+  cursor: help;
+}
+
 /* ============ Validation Info ============ */
 
 .validation-info {
