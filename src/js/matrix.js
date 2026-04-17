@@ -67,6 +67,17 @@ async function init() {
   bindUpload();
   bindModeToggle();
   bindDetailPanel();
+
+  // Load metadata section in local mode (tree-shaken out of public builds)
+  try {
+    const { isLocalMode } = await import('../features.js');
+    if (isLocalMode()) {
+      const { initMetadataSection } = await import('../ui/metadataSection.js');
+      initMetadataSection();
+    }
+  } catch {
+    /* features.js not available or not local mode */
+  }
 }
 
 function initOnboarding() {
@@ -880,6 +891,20 @@ function displayResults() {
 
   // Render priority ranking
   renderPriorityRanking(currentScoreResult);
+
+  // Emit signals for metadata module auto-piping (local mode)
+  const detectedSignalNames = currentScoreResult
+    ? currentScoreResult.cells
+        .filter((c) => c.score > 0)
+        .flatMap((c) => c.matchedSignals.map((s) => s.metric))
+    : [];
+  if (detectedSignalNames.length > 0) {
+    window.dispatchEvent(
+      new CustomEvent('orgpulse:screenshot-analysis-complete', {
+        detail: { signals: [...new Set(detectedSignalNames)] },
+      })
+    );
+  }
 
   document.getElementById('matrix-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

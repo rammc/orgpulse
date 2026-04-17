@@ -17,6 +17,8 @@ export default [
         HTMLElement: 'readonly',
         setTimeout: 'readonly',
         console: 'readonly',
+        CustomEvent: 'readonly',
+        DOMParser: 'readonly',
       },
     },
     rules: {
