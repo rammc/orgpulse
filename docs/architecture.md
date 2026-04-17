@@ -30,15 +30,15 @@ The optional Deep Analysis Mode uses the Anthropic Claude Vision API. Instead of
 
 ## Technology Stack
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Build tool | Vite | Fast dev server + production builds |
-| Language | Vanilla JS (ES Modules) | Low barrier to entry, no framework overhead |
-| Styling | CSS with Custom Properties | Dark theme design system |
-| OCR | Tesseract.js | Local text extraction from screenshots |
-| Vision AI | Anthropic Claude API | Chart interpretation and pattern detection |
-| Hosting | GitHub Pages | Free static hosting |
-| CI | GitHub Actions | Lint + build verification on PRs |
+| Component  | Technology                 | Purpose                                     |
+| ---------- | -------------------------- | ------------------------------------------- |
+| Build tool | Vite                       | Fast dev server + production builds         |
+| Language   | Vanilla JS (ES Modules)    | Low barrier to entry, no framework overhead |
+| Styling    | CSS with Custom Properties | Dark theme design system                    |
+| OCR        | Tesseract.js               | Local text extraction from screenshots      |
+| Vision AI  | Anthropic Claude API       | Chart interpretation and pattern detection  |
+| Hosting    | GitHub Pages               | Free static hosting                         |
+| CI         | GitHub Actions             | Lint + build verification on PRs            |
 
 ## Module Structure
 
