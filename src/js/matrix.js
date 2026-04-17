@@ -38,7 +38,6 @@ const MODERN_PATTERN_TAGS = new Set([
   'CDC',
   'Pub/Sub API',
   'Permission Set Groups',
-  'Agentforce',
   'Dynamic Forms',
   'Trigger Actions Framework',
 ]);

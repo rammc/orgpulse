@@ -115,6 +115,7 @@ ANALYSIS RULES:
 5. A flat or zero-value metric is ALWAYS a clearance, never a finding.
 6. For each finding, specify root_cause_type: "compute", "data", "concurrency", "integration", or "configuration".
 7. Read the counter values from the top bar. Report the actual numbers you see.
+8. Your recommendations must be DIRECTLY CAUSED BY observable patterns in this screenshot. Do not suggest strategic initiatives (Data Cloud adoption, Agentforce implementation, customer unification) unless the metrics specifically demonstrate a performance problem that these solutions address. Stay within the scope of Scale Center performance diagnostics.
 
 Return ONLY valid JSON matching the provided schema.`,
       messages: [
@@ -186,6 +187,36 @@ Return ONLY valid JSON matching the provided schema.`,
   }
   if (v.counterCorrections.length > 0) {
     console.info('OrgPulse: Counter corrections:', v.counterCorrections);
+  }
+
+  // Filter out-of-scope recommendation hints
+  const OUT_OF_SCOPE_PATTERNS = [
+    /data cloud.*unif/i,
+    /identity resolution/i,
+    /agentforce/i,
+    /customer 360/i,
+    /unified customer profile/i,
+    /marketing cloud/i,
+    /commerce cloud/i,
+  ];
+
+  let filteredHintCount = 0;
+  for (const finding of validated.findings) {
+    if (finding.recommendation_hint) {
+      for (const pattern of OUT_OF_SCOPE_PATTERNS) {
+        if (pattern.test(finding.recommendation_hint)) {
+          console.warn(
+            `[OrgPulse] Out-of-scope hint filtered for ${finding.metric}: matched ${pattern}`
+          );
+          finding.recommendation_hint = '';
+          filteredHintCount++;
+          break;
+        }
+      }
+    }
+  }
+  if (filteredHintCount > 0) {
+    validated.validation.filteredHintCount = filteredHintCount;
   }
 
   onProgress(1, 'Complete');
