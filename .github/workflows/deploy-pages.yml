@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: Build with Vite
-        run: npm run build
+        run: npm run build:public
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

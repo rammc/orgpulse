@@ -10,4 +10,7 @@ export default defineConfig({
   server: {
     open: true,
   },
+  define: {
+    'import.meta.env.VITE_BUILD_MODE': JSON.stringify('public'),
+  },
 });

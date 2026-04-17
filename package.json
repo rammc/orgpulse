@@ -4,10 +4,13 @@
   "description": "Diagnose your Salesforce org's performance from a single Scale Center screenshot.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint src/ && prettier --check src/",
+    "dev": "vite --config vite.config.public.js",
+    "dev:local": "vite --config vite.config.local.js",
+    "build": "vite build --config vite.config.public.js",
+    "build:public": "vite build --config vite.config.public.js",
+    "build:local": "vite build --config vite.config.local.js",
+    "preview": "vite preview --config vite.config.public.js",
+    "lint": "eslint src/",
     "format": "prettier --write src/"
   },
   "repository": {
