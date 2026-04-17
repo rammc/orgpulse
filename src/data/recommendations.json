@@ -7,7 +7,7 @@
     "title": "Quick Wins",
     "priority_label": "Implement Now",
     "subtitle": "Maximum performance impact with minimal effort — can be implemented immediately without release risk.",
-    "scale_center_hint": "Scale Center \u2192 Data Storage & API Usage reveals which objects hold the most records and where unselective queries are running.",
+    "scale_center_hint": "Scale Center → Data Storage & API Usage reveals which objects hold the most records and where unselective queries are running.",
     "trigger_signals": [
       {
         "metric": "concurrent_apex_errors",
@@ -27,13 +27,13 @@
         },
         "points": { "info": 1, "warning": 3, "critical": 5 }
       },
-      { "keywords": ["full table scan", "slow soql"] }
+      { "keywords": ["full table scan", "slow soql", "unselective query"] }
     ],
     "recommendations": [
       {
         "title": "Custom Indexes on High-Volume Objects",
-        "body": "For objects with >100k records: identify the most frequently used filter fields in SOQL queries and reports. File a case with Salesforce Support to request Custom Indexes on these fields. This eliminates full table scans and dramatically reduces query execution time.",
-        "tags": ["Apex", "SOQL", "Support Case"],
+        "body": "For objects with >100k records: identify the most frequently used filter fields in SOQL queries and reports. Open a Salesforce Support case to request Custom Indexes on these fields. This eliminates full table scans, makes filters selective, and dramatically reduces DB CPU Time. Verify selectivity with the Query Plan tool in Developer Console before filing the case.",
+        "tags": ["SOQL", "Indexing", "Support Case"],
         "relevant_signals": [
           "db_cpu_time",
           "slow_soql",
@@ -44,15 +44,33 @@
         "root_cause_types": ["data"],
         "references": [
           {
-            "url": "https://help.salesforce.com/s/articleView?id=000387690",
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_indexes.htm",
             "type": "official_docs"
           }
         ]
       },
       {
-        "title": "Consolidate Sharing Rules",
-        "body": "Audit existing Sharing Rules for redundant or overlapping entries. Consolidate where possible and use Sharing Groups instead of individual rules. This drastically reduces share row recalculation time and improves DML performance on shared objects.",
-        "tags": ["Security", "Sharing"],
+        "title": "Enable Skinny Tables for Large Objects",
+        "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow — maximum 100 columns — and remember they're rebuilt asynchronously after schema changes.",
+        "tags": ["SOQL", "Large Data Volumes", "Support Case"],
+        "relevant_signals": [
+          "db_cpu_time",
+          "slow_soql",
+          "slow_transactions",
+          "total_cpu_time"
+        ],
+        "root_cause_types": ["data"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_skinny_tables.htm",
+            "type": "official_docs"
+          }
+        ]
+      },
+      {
+        "title": "Consolidate Sharing Rules and OWD",
+        "body": "Audit existing Sharing Rules for redundant or overlapping entries. Consolidate using criteria-based sharing with hierarchies where possible. Review Organization-Wide Defaults: if most records are public anyway, a more open OWD drastically reduces share row recalculation time and improves DML performance on shared objects.",
+        "tags": ["Security", "Sharing", "Data Model"],
         "relevant_signals": ["concurrent_apex_errors", "row_lock_errors", "concurrent_dml"],
         "root_cause_types": ["concurrency", "data"],
         "references": [
@@ -61,18 +79,11 @@
             "type": "official_docs"
           }
         ]
-      },
-      {
-        "title": "Validation Rules with Early Return",
-        "body": "Review Validation Rules that perform expensive SOQL-based cross-object checks. Place inexpensive field-level checks at the beginning of the rule using AND logic, so costly evaluations only run when necessary. This avoids unnecessary Governor Limit consumption.",
-        "tags": ["Configuration", "Performance"],
-        "relevant_signals": ["total_cpu_time", "apex_execution_time", "concurrent_apex_errors"],
-        "root_cause_types": ["compute", "configuration"],
-        "references": []
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "prioritize",
@@ -82,7 +93,7 @@
     "title": "Prioritize",
     "priority_label": "Schedule Next Sprint",
     "subtitle": "High performance impact with moderate effort — schedule for the next sprint or release cycle.",
-    "scale_center_hint": "Scale Center \u2192 Apex Executions & Concurrent Requests show how close you are to Apex Governor Limits and where concurrency bottlenecks exist.",
+    "scale_center_hint": "Scale Center → Apex Executions & Concurrent Requests show how close you are to Apex Governor Limits and where concurrency bottlenecks exist.",
     "trigger_signals": [
       {
         "metric": "concurrent_apex_errors",
@@ -106,8 +117,8 @@
     ],
     "recommendations": [
       {
-        "title": "Apex CPU Time Optimization",
-        "body": "Identify the top 5 Apex transactions by CPU time using Debug Logs. Common causes: nested loops, unselective SOQL in Triggers, unnecessary String concatenation. Use Limits.getCpuTime() for in-transaction profiling to isolate expensive code paths.",
+        "title": "Apex CPU Hotspot Optimization",
+        "body": "Identify the top 5 Apex transactions by CPU time using Debug Logs and ApexGuru insights (free via Scale Center for UE/Signature orgs). Common causes: nested loops, unselective SOQL in Triggers, and unnecessary String concatenation. Use Limits.getCpuTime() for in-transaction profiling. For heavy computations, offload to Queueable Apex with chaining (up to 50 chained jobs per transaction).",
         "tags": ["Apex", "Performance", "Governor Limits"],
         "relevant_signals": [
           "total_cpu_time",
@@ -122,13 +133,17 @@
           {
             "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_methods_system_limits.htm",
             "type": "official_docs"
+          },
+          {
+            "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_apex_apexguru.htm",
+            "type": "official_docs"
           }
         ]
       },
       {
-        "title": "Bulkify All Triggers",
-        "body": "Audit all Apex Triggers for proper bulkification. SOQL queries and DML statements must never appear inside loops. Adopt the Trigger Handler pattern using Maps for bulk operations to prevent hitting Governor Limits during data loads and batch operations.",
-        "tags": ["Apex", "Triggers", "Best Practice"],
+        "title": "Implement One Trigger Per Object with Handler Pattern",
+        "body": "Consolidate all logic for each SObject into a single trigger delegating to a Trigger Handler class. Use a framework like Trigger Actions Framework (metadata-driven) or fflib-apex-common for enterprise-grade structure. Benefits: deterministic execution order, prevention of recursion, clear separation of concerns, and easier bulkification. Ensure all SOQL and DML is outside loops — design methods to accept and return collections (List, Map, Set).",
+        "tags": ["Apex", "Triggers", "Architecture"],
         "relevant_signals": [
           "concurrent_apex_errors",
           "apex_execution_time",
@@ -140,12 +155,16 @@
           {
             "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_bulk.htm",
             "type": "official_docs"
+          },
+          {
+            "url": "https://github.com/mitchspano/apex-trigger-actions-framework",
+            "type": "community_resource"
           }
         ]
       },
       {
-        "title": "Row Lock Analysis & Mitigation",
-        "body": "Row Locks occur when parallel DML operations target the same records. Use Scale Center to identify affected objects. Mitigation strategies: offload processing to Queueable Apex, enforce record ordering in batch jobs, and avoid parent record lock escalation through careful DML sequencing.",
+        "title": "Row Lock Analysis and Mitigation",
+        "body": "Row Locks occur when parallel DML operations target the same records — especially common during data loads against parent-child hierarchies. Use Scale Center's Row Lock investigation to identify affected objects and entry points. Mitigation: sort batch input by parent Id to prevent lock escalation, offload to Queueable Apex with ordered processing, and avoid recursive triggers that amplify contention. Consider Change Data Capture for downstream systems instead of synchronous DML chains.",
         "tags": ["Apex", "Concurrency", "Data Model"],
         "relevant_signals": ["row_lock_errors", "concurrent_dml", "concurrent_apex_errors"],
         "root_cause_types": ["concurrency"],
@@ -158,7 +177,8 @@
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "strategic",
@@ -168,7 +188,7 @@
     "title": "Strategic",
     "priority_label": "Plan Strategically",
     "subtitle": "High performance impact but significant effort required — plan as a strategic initiative with a clear business case.",
-    "scale_center_hint": "Scale Center \u2192 cross-metric trends (login growth, storage growth, API usage trajectory) indicate whether a strategic architectural change is needed.",
+    "scale_center_hint": "Scale Center → cross-metric trends (login growth, storage growth, API usage trajectory) indicate whether a strategic architectural change is needed.",
     "trigger_signals": [
       {
         "metric": "successful_logins",
@@ -179,13 +199,53 @@
         },
         "points": { "info": 1, "warning": 3, "critical": 5 }
       },
-      { "keywords": ["architecture", "migration", "platform event"] }
+      { "keywords": ["architecture", "migration", "platform event", "data cloud", "zero copy"] }
     ],
     "recommendations": [
       {
-        "title": "Adopt Event-Driven Architecture",
-        "body": "For orgs with high inter-system coupling: introduce Platform Events or Change Data Capture as a decoupling layer. This reduces synchronous callouts, improves scalability, and makes the architecture more resilient to downstream system failures.",
-        "tags": ["Architecture", "Platform Events", "Integration"],
+        "title": "Adopt Data Cloud (D360) for Unified Customer Profiles",
+        "body": "For orgs struggling with fragmented customer data across Sales, Service, Marketing, and external systems: implement Salesforce Data Cloud (D360). It unifies profiles through Identity Resolution, provides Calculated and Streaming Insights, and is the foundation for Agentforce. Use Data Spaces to separate brand, region, or business unit data. Prefer a single Home Org with Companion Orgs (Data Cloud One) over multiple Data Cloud instances. Critical: plan for Data Cloud access even if not immediately needed — it's an Agentforce prerequisite.",
+        "tags": ["Data Cloud", "Architecture", "Agentforce"],
+        "relevant_signals": [
+          "db_cpu_time",
+          "slow_soql",
+          "successful_logins",
+          "slow_transactions"
+        ],
+        "root_cause_types": ["data", "integration"],
+        "references": [
+          {
+            "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_what_is_a_data_cloud.htm",
+            "type": "official_docs"
+          },
+          {
+            "url": "https://architect.salesforce.com/fundamentals/data-architecture",
+            "type": "official_docs"
+          }
+        ]
+      },
+      {
+        "title": "Zero Copy Federation with External Data Warehouses",
+        "body": "For high-volume historical data (>10M records) or data sovereignty requirements: federate Snowflake, BigQuery, Databricks, or Redshift into Data Cloud via Zero Copy — no duplication, no ETL pipelines. Use Live Query for operational dashboards, Accelerated Query (caching) for frequent access patterns, and File Federation for petabyte-scale ML/AI workloads. Keep source systems in the same cloud region as Data Cloud. This eliminates Salesforce storage limits and keeps data governance in the source system.",
+        "tags": ["Data Cloud", "Zero Copy", "Snowflake", "BigQuery"],
+        "relevant_signals": [
+          "db_cpu_time",
+          "slow_soql",
+          "slow_transactions",
+          "successful_logins"
+        ],
+        "root_cause_types": ["data", "integration"],
+        "references": [
+          {
+            "url": "https://help.salesforce.com/s/articleView?id=sf.c360_a_zero_copy_overview.htm",
+            "type": "official_docs"
+          }
+        ]
+      },
+      {
+        "title": "Adopt Event-Driven Architecture with CDC and Platform Events",
+        "body": "For orgs with high inter-system coupling and synchronous callout chains: introduce Change Data Capture (CDC) for near-real-time data replication and Platform Events for custom business events. This decouples systems, reduces synchronous callouts, improves scalability under load, and makes the architecture resilient to downstream failures. Use Pub/Sub API for efficient subscription from external consumers instead of CometD.",
+        "tags": ["Architecture", "Platform Events", "CDC", "Integration"],
         "relevant_signals": [
           "total_callout_errors",
           "callout_time",
@@ -197,33 +257,30 @@
           {
             "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro.htm",
             "type": "official_docs"
-          }
-        ]
-      },
-      {
-        "title": "Data Architecture Review",
-        "body": "For objects exceeding 10M records: evaluate archival strategies (Big Objects, external storage), data partitioning approaches, and whether a Data Model refactoring is warranted. Consider Skinny Tables and archive policies to keep active datasets performant.",
-        "tags": ["Data Model", "Architecture", "Big Objects"],
-        "relevant_signals": ["db_cpu_time", "slow_soql", "successful_logins"],
-        "root_cause_types": ["data"],
-        "references": [
+          },
           {
-            "url": "https://architect.salesforce.com/fundamentals/data-architecture",
+            "url": "https://developer.salesforce.com/docs/platform/pub-sub-api/guide/intro.html",
             "type": "official_docs"
           }
         ]
       },
       {
-        "title": "Org Split Evaluation",
-        "body": "For fundamental scalability challenges: evaluate whether an Org Split (e.g., by business unit or region) is warranted. This is a high-effort initiative, but for mature orgs approaching platform limits, it may be the only long-term solution.",
+        "title": "Org Split or Multi-Org Rationalization",
+        "body": "For fundamental scalability challenges where the org has reached structural platform limits (metadata complexity, data storage, concurrent Apex execution, governance friction between business units): evaluate Org Split by business unit, region, or brand. Conversely, for organizations with multiple orgs that evolved organically without strategy: evaluate consolidation. Both directions are high-effort multi-year initiatives requiring executive sponsorship, careful data migration, integration redesign, and change management. Important distinction: Data Cloud does NOT resolve operational scalability issues of a single overloaded org — it addresses data fragmentation across multiple orgs by unifying profiles. Use Data Cloud when you need a unified customer view, not as a substitute for architectural remediation in the operational org itself.",
         "tags": ["Architecture", "Strategy", "Governance"],
         "relevant_signals": ["*"],
         "root_cause_types": ["compute", "data", "concurrency"],
-        "references": []
+        "references": [
+          {
+            "url": "https://architect.salesforce.com/decision-guides/multi-org",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "take-along",
@@ -233,7 +290,7 @@
     "title": "Take Along",
     "priority_label": "Pick Up Opportunistically",
     "subtitle": "Moderate impact with low effort — include in your next deployment when you're already working in the area.",
-    "scale_center_hint": "Scale Center \u2192 API Usage shows callout volume and which Connected Apps generate the most requests.",
+    "scale_center_hint": "Scale Center → API Usage shows callout volume and which Connected Apps generate the most requests.",
     "trigger_signals": [
       {
         "metric": "total_callout_errors",
@@ -244,33 +301,61 @@
         },
         "points": { "info": 1, "warning": 3, "critical": 5 }
       },
-      { "keywords": ["callout", "api usage", "connected app"] }
+      { "keywords": ["callout", "api usage", "connected app", "imperative apex"] }
     ],
     "recommendations": [
       {
-        "title": "Improve Callout Error Handling",
-        "body": "Implement retry logic with exponential backoff for external callouts. Use Named Credentials instead of hardcoded endpoints. Log failed callouts to a Custom Object for monitoring and create alerts for sustained error patterns.",
-        "tags": ["Integration", "Apex", "Error Handling"],
-        "relevant_signals": ["total_callout_errors", "callout_time", "error_rate"],
-        "root_cause_types": ["integration"],
+        "title": "Migrate Imperative Apex Calls to Wire Adapters",
+        "body": "In LWCs, replace imperative Apex calls with @wire decorators on cacheable Apex methods. Wire adapters enable automatic caching via Lightning Data Service, reactive updates on record changes, and eliminate duplicate server round-trips. For complex queries across multiple objects, prefer the GraphQL Wire Adapter (lightning/graphql) over custom Apex — it provides precise field selection, eliminates over-fetching, and reduces field dependencies in the cache.",
+        "tags": ["LWC", "Performance", "Wire Adapters"],
+        "relevant_signals": [
+          "ui_request_time",
+          "average_request_time",
+          "total_cpu_time",
+          "concurrent_ui_errors"
+        ],
+        "root_cause_types": ["compute"],
         "references": [
           {
-            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm",
+            "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html",
+            "type": "official_docs"
+          },
+          {
+            "url": "https://developer.salesforce.com/docs/platform/graphql/guide",
             "type": "official_docs"
           }
         ]
       },
       {
-        "title": "Deactivate Unused Flows & Process Builder",
-        "body": "Identify inactive or redundant Flows and Process Builder automations. Deactivate or delete them to eliminate unnecessary evaluations during DML operations. Each active automation adds overhead to every record save on its trigger object.",
+        "title": "Improve Callout Error Handling with Named Credentials",
+        "body": "Replace hardcoded endpoints and credentials with Named Credentials (prefer External Credentials + Named Credentials, the modern split introduced in Winter '23). Implement retry logic with exponential backoff for transient failures. Log failed callouts to a Custom Object or Platform Event for monitoring, and create alerts for sustained error patterns. For high-volume integrations, migrate from synchronous callouts to Platform Events with asynchronous consumers.",
+        "tags": ["Integration", "Apex", "Error Handling"],
+        "relevant_signals": ["total_callout_errors", "callout_time", "error_rate"],
+        "root_cause_types": ["integration"],
+        "references": [
+          {
+            "url": "https://help.salesforce.com/s/articleView?id=sf.named_credentials_about.htm",
+            "type": "official_docs"
+          }
+        ]
+      },
+      {
+        "title": "Audit and Consolidate Flows, Retire Process Builder",
+        "body": "Process Builder has been retired — migrate remaining Process Builder automations to Flow immediately. Then audit all Flows: multiple record-triggered Flows on the same object multiply DML evaluations on every save. Consolidate into a single Before-Save Flow per object where possible, and move heavy logic to Apex where Flow becomes inefficient (especially loops over large collections).",
         "tags": ["Configuration", "Automation", "Cleanup"],
         "relevant_signals": ["total_cpu_time", "apex_execution_time", "concurrent_apex_errors"],
         "root_cause_types": ["configuration", "compute"],
-        "references": []
+        "references": [
+          {
+            "url": "https://help.salesforce.com/s/articleView?id=000389306&type=1",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "evaluate",
@@ -280,7 +365,7 @@
     "title": "Evaluate",
     "priority_label": "Analyze & Decide",
     "subtitle": "Moderate impact with moderate effort — conduct a detailed evaluation before committing resources.",
-    "scale_center_hint": "Scale Center \u2192 Login Metrics & Failed Logins reveal authentication issues and potentially unauthorized access attempts.",
+    "scale_center_hint": "Scale Center → Login Metrics & Failed Logins reveal authentication issues and potentially unauthorized access attempts.",
     "trigger_signals": [
       {
         "metric": "failed_logins",
@@ -300,12 +385,25 @@
         },
         "points": { "info": 1, "warning": 3, "critical": 5 }
       },
-      { "keywords": ["login failure", "auth", "callout error"] }
+      { "keywords": ["login failure", "auth", "callout error", "security"] }
     ],
     "recommendations": [
       {
+        "title": "Security Audit: Upgrade to WITH USER_MODE",
+        "body": "Audit Apex SOQL and DML statements for modern security enforcement. Migrate from WITH SECURITY_ENFORCED to WITH USER_MODE (API 58.0+) — it enforces CRUD, FLS, and sharing rules in a single keyword. For DML, use Database.insert(records, AccessLevel.USER_MODE). For graceful degradation when fields are partially inaccessible, use Security.stripInaccessible() which strips fields instead of throwing exceptions. This is the Salesforce-recommended pattern as of Spring '23 and beyond.",
+        "tags": ["Apex", "Security", "FLS"],
+        "relevant_signals": ["concurrent_apex_errors", "error_rate", "failed_logins"],
+        "root_cause_types": ["configuration"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_perms_enforcing.htm",
+            "type": "official_docs"
+          }
+        ]
+      },
+      {
         "title": "Login Failure Root Cause Analysis",
-        "body": "Investigate login failure causes: locked accounts, misconfigured password policies, SSO configuration errors, IP range restrictions. Use Login History and Event Monitoring for root cause analysis. Sustained failed logins can indicate security issues or user experience problems.",
+        "body": "Investigate login failure causes: locked accounts, misconfigured password policies, SSO configuration errors, IP range restrictions, or expired OAuth tokens. Use Login History and Event Monitoring (Login Event, Login As Event) for forensic analysis. Sustained failed logins often indicate misconfigured Connected Apps, expired certificates in SAML/OIDC flows, or credential stuffing attacks — the latter requires MFA enforcement and IP allowlisting.",
         "tags": ["Security", "Identity", "Monitoring"],
         "relevant_signals": ["failed_logins", "error_rate"],
         "root_cause_types": ["configuration"],
@@ -318,7 +416,7 @@
       },
       {
         "title": "Integration Pattern Review",
-        "body": "For recurring callout errors: review whether the correct integration pattern is in use (Request-Reply vs. Fire-and-Forget vs. Batch). Synchronous callouts are often the root cause of timeout errors. Consider migrating to Platform Events for decoupled processing.",
+        "body": "For recurring callout errors or performance degradation: review whether the correct integration pattern is in use. Synchronous Request-Reply is often misused where Fire-and-Forget or Batch would be more resilient. For high-volume real-time scenarios, migrate to Platform Events or Change Data Capture with MuleSoft/Pub/Sub API as the external consumer. Salesforce's integration architecture reference (MuleSoft + Platform APIs + Data Cloud) is now the recommended approach for enterprise integrations.",
         "tags": ["Integration", "Architecture", "Patterns"],
         "relevant_signals": ["total_callout_errors", "callout_time", "error_rate"],
         "root_cause_types": ["integration"],
@@ -331,7 +429,8 @@
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "weigh-up",
@@ -341,7 +440,7 @@
     "title": "Weigh Up",
     "priority_label": "Justify ROI First",
     "subtitle": "Moderate impact with high effort — only pursue with a clear ROI justification and stakeholder alignment.",
-    "scale_center_hint": "Scale Center \u2192 Concurrent UI Errors indicate frontend performance issues that may point to deeper architectural concerns.",
+    "scale_center_hint": "Scale Center → Concurrent UI Errors indicate frontend performance issues that may point to deeper architectural concerns.",
     "trigger_signals": [
       {
         "metric": "concurrent_ui_errors",
@@ -352,12 +451,34 @@
         },
         "points": { "info": 1, "warning": 3, "critical": 5 }
       },
-      { "keywords": ["ui error", "concurrent", "page timeout"] }
+      { "keywords": ["ui error", "concurrent", "page timeout", "graphql", "aura"] }
     ],
     "recommendations": [
       {
+        "title": "Adopt GraphQL Wire Adapter for Data-Heavy LWCs",
+        "body": "Replace imperative Apex calls and multiple LDS wire adapters with the GraphQL Wire Adapter (lightning/graphql). Benefits: precise field selection eliminates over-fetching, multiple related objects in one query, rich filtering and pagination via cursor-based predicates, and reduced cache invalidation. Use variables for reactivity (not string interpolation), mark optional fields with @optional for FLS-graceful degradation, and avoid totalCount on large queries — it forces a full record scan. For mutations, continue using LDS or imperative Apex (GraphQL mutations are not yet supported on the platform).",
+        "tags": ["LWC", "GraphQL", "Performance"],
+        "relevant_signals": [
+          "concurrent_ui_errors",
+          "ui_request_time",
+          "average_request_time",
+          "slow_transactions"
+        ],
+        "root_cause_types": ["compute", "data"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/platform/graphql/guide",
+            "type": "official_docs"
+          },
+          {
+            "url": "https://github.com/trailheadapps/lwc-recipes",
+            "type": "community_resource"
+          }
+        ]
+      },
+      {
         "title": "Lightning Web Components Performance Audit",
-        "body": "Analyze Lightning Web Components for unnecessary re-renders, missing lazy loading, and excessive wire adapters. Use Chrome DevTools Performance tab and the Lightning Inspector browser extension to identify render bottlenecks.",
+        "body": "Analyze Lightning Web Components for unnecessary re-renders, missing lazy loading, and excessive wire adapters. Use Chrome DevTools Performance tab and the Lightning Inspector browser extension to identify render bottlenecks. Split components exceeding 300 lines of JavaScript into child components (Single Responsibility). Avoid @track on primitives (reactive by default), prefer base components over custom implementations, and verify LWS compatibility for all third-party libraries loaded via platformResourceLoader.",
         "tags": ["LWC", "Frontend", "Performance"],
         "relevant_signals": [
           "concurrent_ui_errors",
@@ -375,7 +496,7 @@
       },
       {
         "title": "Aura to LWC Migration",
-        "body": "Identify performance-critical Aura Components and plan migration to Lightning Web Components. LWC delivers significantly better render performance due to its lighter framework overhead and closer-to-native Web Component model.",
+        "body": "Identify performance-critical Aura Components and plan migration to Lightning Web Components. Measured results show 2-60% improvement in Experience Page Time (EPT) after migration, driven by LWC's lighter framework overhead and closer-to-native Web Component model. Prioritize components on frequently accessed pages (home pages, record pages for high-volume objects) and those with heavy data binding. Use the Aura-to-LWC Migration Tool and incremental refactoring via Lightning Message Service for hybrid coexistence during migration.",
         "tags": ["LWC", "Aura", "Migration"],
         "relevant_signals": ["concurrent_ui_errors", "ui_request_time", "average_request_time"],
         "root_cause_types": ["compute"],
@@ -388,7 +509,8 @@
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "opportunistic",
@@ -398,20 +520,20 @@
     "title": "Opportunistic",
     "priority_label": "When Convenient",
     "subtitle": "Low impact with low effort — pick up opportunistically when you're already working in the area.",
-    "scale_center_hint": "Scale Center \u2192 API Usage Trends show whether API consumption can be optimized.",
+    "scale_center_hint": "Scale Center → API Usage Trends show whether API consumption can be optimized.",
     "trigger_signals": [{ "keywords": ["api optimization", "cleanup", "tech debt"] }],
     "recommendations": [
       {
-        "title": "Clean Up Unused Custom Fields",
-        "body": "Identify Custom Fields with zero data population using the Field Usage report or third-party metadata tools. Delete or archive unused fields to reduce object complexity, improve developer experience, and speed up describe calls.",
+        "title": "Clean Up Unused Custom Fields and Metadata",
+        "body": "Identify Custom Fields with zero data population using the Field Usage report, Salesforce Optimizer, or third-party metadata analysis tools. Delete or archive unused fields to reduce object complexity, improve developer experience, speed up describe calls, and simplify LWC data contracts. Equally important: remove unused Custom Objects, Custom Labels, and inactive Validation Rules — they all add cognitive overhead and slow metadata operations.",
         "tags": ["Cleanup", "Data Model", "Governance"],
         "relevant_signals": ["*"],
         "root_cause_types": ["data", "configuration"],
         "references": []
       },
       {
-        "title": "Optimize Debug Log Levels",
-        "body": "Ensure no Debug Logs with Fine or Finest log levels are active in production. Elevated log levels can cause up to 10% CPU overhead per transaction and contribute to Apex CPU Time limit exceptions under load.",
+        "title": "Optimize Debug Log Levels in Production",
+        "body": "Ensure no Debug Logs with Fine or Finest log levels are active in production. Elevated log levels can cause up to 10% CPU overhead per transaction and contribute to Apex CPU Time limit exceptions under load. Audit active Trace Flags and expire unused ones. For ongoing observability, prefer Event Monitoring (via Event Log Files) or Platform Events with custom observability endpoints over ad-hoc Debug Logs.",
         "tags": ["Operations", "Performance", "Quick Fix"],
         "relevant_signals": ["total_cpu_time", "apex_execution_time"],
         "root_cause_types": ["compute", "configuration"],
@@ -419,7 +541,8 @@
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "defer",
@@ -433,8 +556,8 @@
     "trigger_signals": [{ "keywords": ["minor", "nice to have", "backlog"] }],
     "recommendations": [
       {
-        "title": "Increase Apex Test Coverage",
-        "body": "Identify Apex classes with less than 75% code coverage and create meaningful unit tests. Focus on testing critical business logic and edge cases, not just raising the coverage percentage. Use Test.startTest()/Test.stopTest() to properly isolate Governor Limit consumption.",
+        "title": "Increase Apex Test Coverage with Meaningful Assertions",
+        "body": "Identify Apex classes with less than 75% code coverage and create meaningful unit tests. Focus on testing business logic and edge cases, not just raising the coverage percentage — Salesforce no longer recommends chasing 100% coverage at the expense of test quality. Use Test.startTest()/Test.stopTest() to isolate Governor Limit consumption, @TestSetup for reusable test data, and Stub API for mocking callouts and dependencies. Avoid SeeAllData=true — always create test data within tests.",
         "tags": ["Testing", "Apex", "Quality"],
         "relevant_signals": ["*"],
         "root_cause_types": ["compute"],
@@ -446,16 +569,22 @@
         ]
       },
       {
-        "title": "Migrate from Profiles to Permission Sets",
-        "body": "Migrate security assignments from Profiles to Permission Sets and Permission Set Groups. This reduces maintenance overhead, improves governance, and aligns with Salesforce's long-term direction of deprecating Profile-based permissions.",
+        "title": "Migrate from Profiles to Permission Set Groups",
+        "body": "Salesforce has announced deprecation of Profile-based permissions in favor of Permission Sets and Permission Set Groups. Start migrating: leave Profiles as minimal baseline (just license and default record type), and grant all additional permissions via Permission Set Groups organized by persona (e.g., Sales_Rep_Group, Service_Agent_Group). Use Muting Permission Sets to remove permissions within a group when needed. This improves governance, simplifies auditing, and aligns with Salesforce's long-term direction.",
         "tags": ["Security", "Governance", "Configuration"],
         "relevant_signals": ["*"],
         "root_cause_types": ["configuration"],
-        "references": []
+        "references": [
+          {
+            "url": "https://admin.salesforce.com/blog/2023/the-great-migration-to-permission-sets",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   },
   {
     "id": "skip",
@@ -470,7 +599,7 @@
     "recommendations": [
       {
         "title": "Complete Apex Layer Rewrite",
-        "body": "A full rewrite of all Apex classes to a new framework (e.g., Enterprise Design Patterns from scratch) sounds appealing but is almost never economically justified in production orgs with mature, tested codebases. Prefer incremental refactoring of hotspots instead.",
+        "body": "A full rewrite of all Apex classes to a new framework (e.g., Enterprise Design Patterns from scratch) sounds appealing but is almost never economically justified in production orgs with mature, tested codebases. Prefer incremental refactoring of hotspots identified via ApexGuru and Scale Center. Apply Enterprise Patterns (Service Layer, Selector Layer, Domain Layer) selectively to new modules, not retroactively to the entire codebase.",
         "tags": ["Architecture", "Strategy", "Anti-Pattern"],
         "relevant_signals": ["*"],
         "root_cause_types": ["compute"],
@@ -478,7 +607,7 @@
       },
       {
         "title": "Custom UI Replacing Standard Features",
-        "body": "Building custom Lightning Web Components to replace standard features (List Views, Related Lists, Reports) creates significant ongoing maintenance burden. The effort to keep parity with Salesforce's evolving standard features almost always exceeds the benefit.",
+        "body": "Building custom Lightning Web Components to replace standard features (List Views, Related Lists, Reports, Dashboards) creates significant ongoing maintenance burden. The effort to keep parity with Salesforce's evolving standard features — new base components, SLDS updates, Dynamic Forms, Dynamic Related Lists — almost always exceeds the benefit. Extend standard functionality with Quick Actions, Flow, or focused LWCs on record pages instead of replacing it wholesale.",
         "tags": ["LWC", "Strategy", "Anti-Pattern"],
         "relevant_signals": ["*"],
         "root_cause_types": ["compute"],
@@ -486,6 +615,7 @@
       }
     ],
     "contributors": ["@cramm"],
-    "added": "2026-04-16"
+    "added": "2026-04-16",
+    "updated": "2026-04-17"
   }
 ]
