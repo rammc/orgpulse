@@ -21,48 +21,105 @@ const PATTERN_METADATA = {
     displayName: 'SOQL in loop',
     explanation:
       'SOQL queries inside for-loops hit the 100 queries-per-transaction governor limit.',
+    whyItMatters:
+      'SOQL queries inside for-loops execute once per iteration. With 10 records in the loop and one query per iteration, you have 10 queries. At 100 records, you hit the Apex governor limit and the transaction fails with a runtime exception visible to end users. In bulk contexts (data loads, batch updates, API imports), this pattern reliably breaks production.',
+    scaleCenterSymptoms:
+      'Scale Center surfaces this as total_cpu_time spikes during bulk operations, apex_execution_time correlated with specific save windows, and in severe cases concurrent_apex_errors as governor limit exceptions pile up.',
+    howToFix:
+      'Move the SOQL outside the loop. Query once with a WHERE clause using a Set<Id> that collects all iteration targets, then store results in a Map<Id, SObject> for O(1) lookup inside the loop. For Triggers, follow the Trigger Handler pattern and keep all SOQL in the handler constructor or dedicated setup methods.',
   },
   DML_IN_LOOP: {
     displayName: 'DML in loop',
     explanation: 'DML operations inside for-loops hit the 150 DML-per-transaction limit.',
+    whyItMatters:
+      'Each DML statement inside a loop counts against the 150 DML-per-transaction governor limit. At 150 records in the loop, the transaction fails. Beyond the governor limit, individual DML statements are extremely inefficient — each opens a database transaction. Bulk DML on a collection is 10-100x faster than one DML per record.',
+    scaleCenterSymptoms:
+      'Scale Center shows elevated total_cpu_time during bulk saves, apex_execution_time spikes correlated with data loads, and concurrent_apex_errors when the governor limit is hit under load.',
+    howToFix:
+      'Collect modified records into a List or Map inside the loop, then execute a single DML statement after the loop completes. For upserts against large volumes, batch into chunks of 200 records using Database.upsert with allOrNone=false.',
   },
   DATABASE_DML_IN_LOOP: {
     displayName: 'Database.DML() in loop',
     explanation: 'Database DML calls inside loops hit the same governor limits as direct DML.',
+    whyItMatters:
+      'Database.insert(), Database.update(), and related methods count identically against the 150 DML-per-transaction limit. The only functional difference is the ability to handle partial failures via allOrNone=false. Putting them in a loop amplifies the same governor issue.',
+    scaleCenterSymptoms:
+      'Same symptoms as regular DML-in-loop: total_cpu_time spikes, apex_execution_time correlated with bulk operations, concurrent_apex_errors at governor boundaries.',
+    howToFix:
+      'Collect records into a List before the loop, then execute a single Database.upsert(records, false) after the loop. Process the List<Database.SaveResult> returned to handle per-record outcomes.',
   },
   NESTED_LOOP: {
     displayName: 'Nested loops',
-    explanation:
-      'Nested for-loops often hide O(n^2) complexity and amplify other issues inside them.',
+    explanation: 'Nested for-loops often hide O(n^2) complexity and amplify other issues.',
+    whyItMatters:
+      'A loop inside a loop performs O(n x m) operations — with 200 records in each, that is 40,000 iterations. If anything inside the inner loop touches CPU or memory meaningfully, the total transaction cost compounds quickly.',
+    scaleCenterSymptoms:
+      'Scale Center shows sustained total_cpu_time (not spikes — continuous elevation), sometimes heap_size_errors for large intermediate collections, and slow_transactions correlated with the affected operation.',
+    howToFix:
+      'If joining two collections, use a Map for O(1) lookup instead of a second loop. If computing a cross product, evaluate whether the algorithm can be rewritten as two sequential passes. If nesting is unavoidable, ensure no SOQL/DML inside.',
   },
   UPDATE_WITHOUT_FOR_UPDATE: {
     displayName: 'Read-then-write without FOR UPDATE',
-    explanation:
-      'Records queried then updated without FOR UPDATE lock can cause row lock contention.',
+    explanation: 'Records queried then updated without FOR UPDATE can cause row lock contention.',
+    whyItMatters:
+      'When multiple transactions read the same records and then update them without an explicit lock, race conditions emerge. The second write either overwrites the first (lost update) or fails with UNABLE_TO_LOCK_ROW.',
+    scaleCenterSymptoms:
+      'Scale Center shows row_lock_errors as the primary signal. The count may be low in absolute terms, but each instance represents a failed transaction.',
+    howToFix:
+      'Add FOR UPDATE to the SOQL query: [SELECT Id FROM ... WHERE ... FOR UPDATE]. This explicitly locks the rows for the transaction duration. Alternatively, redesign to avoid read-modify-write sequences.',
   },
   BATCH_WITHOUT_ORDER_BY: {
     displayName: 'Batch query without ORDER BY',
     explanation:
       'Batch Apex queries without ORDER BY produce non-deterministic ordering, increasing row lock risk.',
+    whyItMatters:
+      'When two batch jobs run against the same object without ORDER BY, records may return in different orders on each execution. If both modify overlapping records, the non-deterministic processing order creates lock contention.',
+    scaleCenterSymptoms:
+      'row_lock_errors clustered around scheduled batch job execution windows. The errors may be sporadic, making them hard to reproduce.',
+    howToFix:
+      'Add ORDER BY Id (or another stable key) to the Database.getQueryLocator call. This ensures deterministic processing order, eliminating concurrency-related lock races.',
   },
   RT_FLOW_NO_ENTRY_FILTER: {
     displayName: 'RT Flow without entry condition',
     explanation: 'RT Flow fires on every save. Entry filters reduce unnecessary executions.',
+    whyItMatters:
+      'A Record-Triggered Flow without entry filters executes on every save of the target object — even when no relevant field changed. On high-volume objects, this multiplies CPU overhead across millions of saves per month.',
+    scaleCenterSymptoms:
+      'total_cpu_time elevated proportionally to the save volume of the target object. apex_execution_time correlated with any save operation. slow_transactions if the flow itself is non-trivial.',
+    howToFix:
+      'Add entry condition filters in the Flow Start element. At minimum, check that relevant fields actually changed using ISCHANGED() formulas. Entry filters that exclude 90% of saves reduce the flow cost by 90%.',
   },
   FLOW_RECORD_OP_IN_LOOP: {
     displayName: 'Record operation inside Flow loop',
     explanation:
       'Flow loop contains Get/Create/Update/Delete nodes — Flow equivalent of SOQL-in-loop.',
+    whyItMatters:
+      'Each Get Records, Create Records, Update Records, or Delete Records node inside a Flow loop executes once per iteration. The same governor limits that apply to Apex apply to Flow. A loop over 50 items with a Get Records inside issues 50 queries.',
+    scaleCenterSymptoms:
+      'total_cpu_time and apex_execution_time spikes during bulk saves on the trigger object. Governor limit breaches in Flow surface as Apex errors in Scale Center.',
+    howToFix:
+      'Use a Get Records node BEFORE the loop with a WHERE condition matching all iteration targets. Store results in a collection variable. Inside the loop, filter from the pre-fetched collection. For Create/Update, build a collection inside the loop and use a single node AFTER the loop.',
   },
   MULTIPLE_RT_FLOWS_SAME_TRIGGER: {
     displayName: 'Multiple RT Flows on same trigger',
-    explanation:
-      'Multiple active RT Flows compound CPU cost on every save. Consolidate via orchestrating Flow.',
+    explanation: 'Multiple active RT Flows compound CPU cost on every save.',
+    whyItMatters:
+      'When three RT Flows fire on every Account save, each adds its own CPU cost, decision evaluations, and potential record operations. The flows run sequentially, and their costs sum up.',
+    scaleCenterSymptoms:
+      'Cumulative total_cpu_time and apex_execution_time that exceeds what any single flow would produce. Compound effect amplified if one flow contains inefficient patterns.',
+    howToFix:
+      'Consolidate into a single orchestrating flow per trigger-object pair. The orchestrator uses Decision elements to route based on record state. Benefits: deterministic order, shared data access, easier debugging.',
   },
   FLOW_SYNC_CALLOUT: {
     displayName: 'Synchronous callout in RT Flow',
     explanation:
       'Synchronous callouts in RT Flows block transactions and cause callout_time spikes.',
+    whyItMatters:
+      'A synchronous callout blocks the entire save transaction until the external service responds — up to 120 seconds. During bulk saves, hundreds of callouts execute sequentially. A 500ms callout on an Account save is imperceptible for one save; the same callout during a 1000-record data load takes 500 seconds.',
+    scaleCenterSymptoms:
+      'callout_time spikes correlated with save operations. total_callout_errors when the external service times out. average_request_time and ui_request_time degrade proportionally to callout latency.',
+    howToFix:
+      'Move the callout to an asynchronous context. Best option: Platform Events. The flow publishes an event; a separate subscriber handles the callout outside the save transaction. Alternative: Queueable Apex triggered from the flow.',
   },
 };
 
@@ -288,14 +345,27 @@ function renderGroupedFindings(findings, container) {
         const cardsHtml = pg.findings.map((f) => renderFindingCard(f)).join('');
 
         return `
-        <details class="pattern-group"${isOpen}>
+        <details class="pattern-group" id="pattern-${pg.pattern.toLowerCase().replace(/_/g, '-')}"${isOpen}>
           <summary class="pattern-group__header">
             <span class="pattern-chevron">&#9660;</span>
             <span class="pattern-name">${meta.displayName}</span>
             <span class="pattern-count">${pg.findings.length}</span>
             ${criticalLabel}
           </summary>
-          ${meta.explanation ? `<div class="pattern-explanation">${meta.explanation}</div>` : ''}
+          <div class="pattern-explanation">${meta.explanation}</div>
+          ${
+            meta.whyItMatters
+              ? `
+          <details class="pattern-deep-dive">
+            <summary class="pattern-deep-dive__toggle">Read more about this pattern</summary>
+            <div class="pattern-deep-dive__content">
+              <section><h5>Why this matters</h5><p>${meta.whyItMatters}</p></section>
+              <section><h5>What Scale Center shows</h5><p>${meta.scaleCenterSymptoms}</p></section>
+              <section><h5>How to fix it</h5><p>${meta.howToFix}</p></section>
+            </div>
+          </details>`
+              : ''
+          }
           <div class="pattern-findings">${cardsHtml}</div>
         </details>`;
       })

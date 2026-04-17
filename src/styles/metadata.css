@@ -263,6 +263,59 @@
   padding: 0.5rem 0.7rem;
 }
 
+/* ============ Pattern Deep Dive ============ */
+
+.pattern-deep-dive {
+  margin: 0.25rem 0.7rem 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.pattern-deep-dive__toggle {
+  color: var(--accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.2rem 0;
+}
+
+.pattern-deep-dive__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.pattern-deep-dive__toggle::before {
+  content: '\25B8 ';
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.pattern-deep-dive[open] .pattern-deep-dive__toggle::before {
+  transform: rotate(90deg);
+}
+
+.pattern-deep-dive__content {
+  padding: 0.5rem 0 0.25rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.pattern-deep-dive__content section {
+  margin-bottom: 0.75rem;
+}
+
+.pattern-deep-dive__content h5 {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+}
+
+.pattern-deep-dive__content p {
+  margin: 0;
+}
+
 /* ============ Finding Cards (Metadata) ============ */
 
 .metadata-section__findings .finding-card {
