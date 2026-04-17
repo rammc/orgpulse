@@ -85,9 +85,25 @@ OrgPulse is a **performance diagnostic tool**. It reads Scale Center screenshots
   <img alt="OrgPulse Architecture — data flow from screenshot upload through OCR and Vision analysis, validation, scoring, to the prioritization matrix" src="orgpulse-architecture.svg" width="680">
 </picture>
 
+## Build Modes
+
+OrgPulse has two build outputs from a single codebase:
+
+### Public build (GitHub Pages)
+- Screenshot-based Scale Center diagnostics only
+- Deployed to https://rammc.github.io/orgpulse
+- Command: `npm run build` or `npm run dev`
+
+### Local build (self-hosted)
+- Screenshot diagnostics plus metadata analysis of SFDX projects
+- Runs on localhost via `npm run dev:local`
+- Metadata analyzer scans Apex classes, triggers, and Flows for patterns correlating with Scale Center signals
+- Not deployed — for architects working with real Salesforce metadata
+- Command: `npm run dev:local`
+
 ## Quick Start
 
-### Run Locally
+### Public mode (screenshot analysis)
 
 ```bash
 git clone https://github.com/rammc/orgpulse.git
@@ -96,7 +112,13 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+### Local mode (screenshot + metadata analysis)
+
+```bash
+npm run dev:local
+```
+
+Open `http://localhost:5173` in Chrome or Edge (File System Access API required for metadata analysis).
 
 ## Cost Transparency
 

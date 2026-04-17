@@ -65,3 +65,11 @@ Do NOT restore if:
 - You have not first tried `git revert` on the specific problematic commits
 
 Restoration is the last resort, not the first.
+
+## Related: orgpulse-dev archival
+
+After the integration is confirmed stable (1-2 weeks without issues), archive the orgpulse-dev repo:
+
+1. In GitHub Settings for rammc/orgpulse-dev, click "Archive this repository"
+2. Add to the orgpulse-dev README: "This prototype has been merged into rammc/orgpulse as of 2026-04-17. See the main repo for continued development."
+3. Keep the repo accessible (archived, not deleted) — it is the historical record of the prototype phase.
