@@ -17,18 +17,16 @@ Recommendations are stored in `src/data/recommendations.json`. Each entry in the
   "id": "quick-wins",
   "matrix_position": { "impact": "high", "effort": "low" },
   "color": "green",
-  "icon": "⚡",
+  "icon": "zap",
   "title": "Quick Wins",
-  "priority_label": "Sofort umsetzen",
-  "subtitle": "German description of the cell's purpose.",
-  "scale_center_hint": "German hint about which Scale Center section is relevant.",
-  "trigger_signals": [
-    { "metric": "db_cpu_time", "threshold": "high" },
-    { "keywords": ["full table scan", "slow soql"] }
-  ],
+  "priority_label": "Implement Now",
+  "subtitle": "Description of the cell's purpose.",
+  "scale_center_hint": "Hint about which Scale Center section is relevant.",
+  "trigger_signals": [ ... ],
   "recommendations": [ ... ],
   "contributors": ["@cramm"],
-  "added": "2026-04-16"
+  "added": "2026-04-16",
+  "updated": "2026-04-17"
 }
 ```
 
@@ -38,9 +36,11 @@ Recommendations are stored in `src/data/recommendations.json`. Each entry in the
 
 ```json
 {
-  "title": "Custom Indexes auf grosse Objekte",
-  "body": "Fur Objekte mit >100k Records: Identifiziere die meistgenutzten Filter-Felder in SOQL-Queries und Reports. Erstelle einen Case bei Salesforce Support fur Custom Indexes auf diese Felder.",
+  "title": "Custom Indexes on High-Volume Objects",
+  "body": "For objects with >100k records: identify the most frequently used filter fields...",
   "tags": ["Apex", "SOQL", "Support Case"],
+  "relevant_signals": ["db_cpu_time", "slow_soql", "full_table_scan", "slow_transactions"],
+  "root_cause_types": ["data"],
   "references": [
     {
       "url": "https://help.salesforce.com/s/articleView?id=000387690",
@@ -54,23 +54,59 @@ Recommendations are stored in `src/data/recommendations.json`. Each entry in the
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `title` | string | Yes | Short, descriptive title (German) |
-| `body` | string | Yes | Actionable advice explaining what to do and why (German) |
-| `tags` | string[] | Yes | Technology/area tags (e.g., "Apex", "LWC", "Integration") |
-| `references` | object[] | No | Links to official documentation |
+| `title` | string | Yes | Short, action-oriented title (5-10 words) |
+| `body` | string | Yes | 2-4 sentence description with specific actionable advice |
+| `tags` | string[] | Yes | Technology/area tags (e.g., "Apex", "LWC", "Data Cloud") |
+| `relevant_signals` | string[] | Yes | Signal metric names that make this recommendation relevant. Use `["*"]` for universal recommendations |
+| `root_cause_types` | string[] | Yes | One or more of: `compute`, `data`, `concurrency`, `integration`, `configuration` |
+| `references` | object[] | No | Links to official documentation or community resources |
 
 ### Reference Object
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `url` | string | Full URL to the reference |
-| `type` | string | One of: `official_docs`, `blog`, `trailhead`, `github` |
+| `type` | string | `official_docs` or `community_resource` |
+
+## Contributing Modern Patterns
+
+OrgPulse prioritizes current Salesforce best practices over legacy approaches. When adding recommendations, prefer:
+
+| Modern | Over Legacy |
+|--------|-------------|
+| LWC | Aura |
+| GraphQL Wire Adapter (`lightning/graphql`) | Imperative Apex calls |
+| `WITH USER_MODE` | `WITH SECURITY_ENFORCED` |
+| Named Credentials + External Credentials | Hardcoded endpoints |
+| Platform Events + CDC via Pub/Sub API | Synchronous callouts, CometD |
+| Flow (Record-Triggered, Screen, Scheduled) | Process Builder (retired) |
+| Permission Set Groups | Profile-based permissions |
+| Data Cloud + Zero Copy Federation | Manual ETL, storage limit workarounds |
+| Queueable Apex with chaining | `@future` methods |
+| Trigger Actions Framework / fflib | Ad-hoc trigger logic |
+| Dynamic Forms, Dynamic Related Lists | Custom LWC for standard features |
+
+If your recommendation references a legacy pattern, include the modern alternative and a clear reason why the legacy is being discussed.
+
+## Valid Signal Names
+
+When setting `relevant_signals`, use ONLY these validated metric identifiers:
+
+**Counter metrics (from OCR):**
+`successful_logins`, `failed_logins`, `concurrent_apex_errors`, `concurrent_ui_errors`, `row_lock_errors`, `total_callout_errors`
+
+**Chart metrics (from Vision analysis):**
+`total_execution_errors`, `average_request_time`, `total_request_volume`, `total_cpu_time`, `total_logins`, `average_callout_time`, `total_callout_errors_detail`
+
+**Derived signals (from correlation analysis):**
+`db_cpu_time`, `apex_execution_time`, `ui_request_time`, `slow_transactions`, `concurrent_requests`, `concurrent_dml`, `callout_time`, `error_rate`, `slow_soql`, `full_table_scan`
+
+**Wildcard:**
+`*` — matches any detected signal (use sparingly for universally applicable recommendations)
 
 ## Step-by-Step: Adding a Recommendation
 
 ### 1. Choose the Right Matrix Cell
-
-Determine where your recommendation fits based on Impact and Effort:
 
 | Cell | Impact | Effort | Example Use Cases |
 |------|--------|--------|-------------------|
@@ -86,66 +122,32 @@ Determine where your recommendation fits based on Impact and Effort:
 
 ### 2. Write Your Recommendation
 
-- **Title:** Keep it concise and specific (5-10 words)
-- **Body:** Explain what to do, why, and how. Be actionable. Include thresholds or metrics where possible (e.g., ">100k Records")
-- **Tags:** Use existing tags where possible. Common tags: `Apex`, `SOQL`, `LWC`, `Integration`, `Security`, `Configuration`, `Architecture`, `Data Model`
-- **References:** Always include Salesforce official documentation links when available
+- **Title:** Concise and specific (5-10 words)
+- **Body:** Explain what to do, why, and how. Be actionable.
+- **Tags:** Use existing tags where possible. Modern pattern tags get a visual accent.
+- **Relevant signals:** Which detected metrics make this recommendation applicable.
+- **Root cause types:** What category of problem does this address.
+- **References:** Include Salesforce official documentation links when available.
 
 ### 3. Edit the JSON File
 
-Open `src/data/recommendations.json` and find the cell you want to add to. Add your recommendation to the `recommendations` array:
-
-```json
-{
-  "id": "prioritize",
-  "recommendations": [
-    // ... existing recommendations ...
-    {
-      "title": "Async Apex fur schwere Operationen",
-      "body": "Identifiziere synchrone Apex-Operationen mit hoher CPU-Zeit oder vielen SOQL-Queries. Migriere diese zu Queueable Apex oder Batch Apex, um Governor Limits zu entlasten und die User Experience zu verbessern.",
-      "tags": ["Apex", "Performance", "Async"],
-      "references": [
-        {
-          "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm",
-          "type": "official_docs"
-        }
-      ]
-    }
-  ]
-}
-```
+Open `src/data/recommendations.json` and add your recommendation to the appropriate cell's `recommendations` array.
 
 ### 4. Add Yourself as Contributor
 
-Add your GitHub handle to the cell's `contributors` array:
+Add your GitHub handle to the cell's `contributors` array.
 
-```json
-"contributors": ["@cramm", "@your-handle"]
-```
+### 5. Validate and Submit
 
-### 5. Validate
-
-Run `npm run build` to ensure the JSON is valid and the app builds correctly.
-
-### 6. Submit a PR
-
-Use the [Matrix Recommendation issue template](../.github/ISSUE_TEMPLATE/matrix_recommendation.md) to discuss your idea first, or submit a PR directly if you're confident about the placement.
-
-## Language Guidelines
-
-- **Recommendation content** (title, body, subtitle, hints) should be in **German**
-- **Tags** should be in **English** (they are technical terms)
-- **Matrix cell titles** (`title` field) are in **English**
-- We plan to add i18n support in a future version
+Run `npm run build` to ensure the JSON is valid. Then submit a PR or open a [Matrix Recommendation issue](../.github/ISSUE_TEMPLATE/matrix_recommendation.md).
 
 ## Quality Checklist
 
-Before submitting your recommendation:
-
 - [ ] Title is concise and specific
 - [ ] Body is actionable (tells the reader *what* to do)
-- [ ] Correct matrix cell chosen (Impact vs. Effort makes sense)
-- [ ] Tags are relevant and use existing tag names where possible
+- [ ] Correct matrix cell chosen (Impact vs. Effort)
+- [ ] `relevant_signals` uses valid signal names from the list above
+- [ ] `root_cause_types` uses valid values
+- [ ] Tags are relevant — modern patterns preferred
 - [ ] References link to official Salesforce documentation
-- [ ] JSON is valid (run `npm run build` to check)
-- [ ] Your GitHub handle is in the `contributors` array
+- [ ] JSON is valid (`npm run build` passes)
