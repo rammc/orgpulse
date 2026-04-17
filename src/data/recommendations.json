@@ -53,7 +53,12 @@
         "title": "Enable Skinny Tables for Large Objects",
         "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow — maximum 100 columns — and remember they're rebuilt asynchronously after schema changes.",
         "tags": ["SOQL", "Large Data Volumes", "Support Case"],
-        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "total_cpu_time"],
+        "relevant_signals": [
+          "db_cpu_time",
+          "slow_soql",
+          "slow_transactions",
+          "total_cpu_time"
+        ],
         "root_cause_types": ["data"],
         "references": [
           {
@@ -224,7 +229,12 @@
         "title": "Zero Copy Federation to Offload Large Data Volumes",
         "body": "When queries against very large tables (>50M records) cause sustained DB CPU spikes and Skinny Tables or indexes no longer provide sufficient relief: federate the data to Snowflake, BigQuery, Databricks, or Redshift via Zero Copy. Historical analytics, reporting, and ML workloads can run against the federated source without duplicating data or consuming Salesforce storage. Use File Federation for petabyte-scale historical data, Accelerated Query (caching) for frequent access patterns. Keep source systems in the same cloud region as the federation endpoint. This is a performance remediation, not a marketing initiative — pursue when traditional LDV patterns have been exhausted.",
         "tags": ["Zero Copy", "Large Data Volumes", "Snowflake", "BigQuery"],
-        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "successful_logins"],
+        "relevant_signals": [
+          "db_cpu_time",
+          "slow_soql",
+          "slow_transactions",
+          "successful_logins"
+        ],
         "root_cause_types": ["data"],
         "references": [
           {
@@ -380,14 +390,19 @@
     ],
     "recommendations": [
       {
-        "title": "Security Audit: Upgrade to WITH USER_MODE",
-        "body": "Audit Apex SOQL and DML statements for modern security enforcement. Migrate from WITH SECURITY_ENFORCED to WITH USER_MODE (API 58.0+) — it enforces CRUD, FLS, and sharing rules in a single keyword. For DML, use Database.insert(records, AccessLevel.USER_MODE). For graceful degradation when fields are partially inaccessible, use Security.stripInaccessible() which strips fields instead of throwing exceptions. This is the Salesforce-recommended pattern as of Spring '23 and beyond.",
-        "tags": ["Apex", "Security", "FLS"],
-        "relevant_signals": ["concurrent_apex_errors", "error_rate", "failed_logins"],
-        "root_cause_types": ["configuration"],
+        "title": "Enable Event Monitoring for Deep Diagnostics",
+        "body": "When Scale Center surfaces login or callout anomalies, Event Monitoring provides the forensic detail to identify root causes. Enable Real-Time Event Monitoring (requires Shield or standalone add-on) for: LoginEvent to correlate failed logins with source IP, client type, and authentication method; ApiEvent to identify which Connected Apps generate the most callouts and errors; LightningUriEvent for UI performance correlation. Stream events to Splunk, Datadog, or an AppExchange SIEM for sustained observability. Without Event Monitoring, root cause analysis relies on Debug Logs, which are time-limited and expensive.",
+        "tags": ["Event Monitoring", "Shield", "Observability"],
+        "relevant_signals": [
+          "failed_logins",
+          "total_callout_errors",
+          "error_rate",
+          "concurrent_ui_errors"
+        ],
+        "root_cause_types": ["configuration", "integration"],
         "references": [
           {
-            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_perms_enforcing.htm",
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/sforce_api_objects_eventmonitoring.htm",
             "type": "official_docs"
           }
         ]
@@ -542,32 +557,53 @@
     "icon": "clock",
     "title": "Defer",
     "priority_label": "Backlog",
-    "subtitle": "Low impact with moderate effort — add to the backlog but do not actively prioritize.",
-    "scale_center_hint": "Scale Center shows no urgent signals for these items — they stem from best-practice reviews and long-term governance goals.",
-    "trigger_signals": [{ "keywords": ["minor", "nice to have", "backlog"] }],
+    "subtitle": "Low impact with moderate effort — add to the backlog for when the team has capacity, but do not actively prioritize.",
+    "scale_center_hint": "Scale Center → weaker signals or slow-drifting trends indicate items worth tracking but not urgent: scheduled job timing, API consumption by integration user, background load patterns.",
+    "trigger_signals": [
+      {
+        "metric": "total_callout_errors",
+        "thresholds": {
+          "info": { "min": 1, "max": 10 },
+          "warning": { "min": 11, "max": 50 },
+          "critical": { "min": 51 }
+        },
+        "points": { "info": 1, "warning": 3, "critical": 5 }
+      },
+      { "keywords": ["scheduled job", "batch", "api usage", "connected app"] }
+    ],
     "recommendations": [
       {
-        "title": "Increase Apex Test Coverage with Meaningful Assertions",
-        "body": "Identify Apex classes with less than 75% code coverage and create meaningful unit tests. Focus on testing business logic and edge cases, not just raising the coverage percentage — Salesforce no longer recommends chasing 100% coverage at the expense of test quality. Use Test.startTest()/Test.stopTest() to isolate Governor Limit consumption, @TestSetup for reusable test data, and Stub API for mocking callouts and dependencies. Avoid SeeAllData=true — always create test data within tests.",
-        "tags": ["Testing", "Apex", "Quality"],
-        "relevant_signals": ["*"],
-        "root_cause_types": ["compute"],
+        "title": "Review Scheduled Apex and Batch Jobs",
+        "body": "Scale Center may show periodic CPU or DML spikes that correlate with scheduled Apex or batch job execution windows. Review all active Scheduled Jobs via Setup → Scheduled Jobs and Apex Jobs: identify obsolete jobs that can be removed, jobs running too frequently, or overlapping job windows that cause contention. For jobs with heavy processing, consider adjusting batch scope sizes (default 200, can be reduced for CPU-bound operations) or shifting execution to off-peak hours to smooth the CPU consumption pattern.",
+        "tags": ["Apex", "Batch", "Scheduling", "Operations"],
+        "relevant_signals": [
+          "total_cpu_time",
+          "apex_execution_time",
+          "concurrent_apex_errors",
+          "slow_transactions"
+        ],
+        "root_cause_types": ["compute", "configuration"],
         "references": [
           {
-            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing.htm",
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_batch_interface.htm",
             "type": "official_docs"
           }
         ]
       },
       {
-        "title": "Migrate from Profiles to Permission Set Groups",
-        "body": "Salesforce has announced deprecation of Profile-based permissions in favor of Permission Sets and Permission Set Groups. Start migrating: leave Profiles as minimal baseline (just license and default record type), and grant all additional permissions via Permission Set Groups organized by persona (e.g., Sales_Rep_Group, Service_Agent_Group). Use Muting Permission Sets to remove permissions within a group when needed. This improves governance, simplifies auditing, and aligns with Salesforce's long-term direction.",
-        "tags": ["Security", "Governance", "Configuration"],
-        "relevant_signals": ["*"],
-        "root_cause_types": ["configuration"],
+        "title": "Audit API Usage by Connected App",
+        "body": "When Scale Center shows elevated API request volume or periodic callout error patterns, identify which Connected Apps and integration users consume the most API calls. Use the API Usage Last 7 Days report and Login History filtered by API requests. Deactivate unused Connected Apps, consolidate duplicate integrations where possible, and review OAuth scopes — overly broad scopes amplify security risk without performance benefit. For high-volume integrations consuming API limits, evaluate migration to Pub/Sub API for event-driven consumption.",
+        "tags": ["API", "Connected Apps", "Integration", "Governance"],
+        "relevant_signals": [
+          "total_callout_errors",
+          "callout_time",
+          "total_request_volume",
+          "successful_logins"
+        ],
+        "root_cause_types": ["integration", "configuration"],
         "references": [
           {
-            "url": "https://admin.salesforce.com/blog/2023/the-great-migration-to-permission-sets",
+            "url": "https://help.salesforce.com/s/articleView?id=sf.connected_app_overview.htm",
             "type": "official_docs"
           }
         ]
