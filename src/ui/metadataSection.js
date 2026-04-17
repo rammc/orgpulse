@@ -372,8 +372,9 @@ function renderFindingCard(f) {
       <div class="finding-card__header">
         <span class="finding-card__severity finding-card__severity--${f.severity}">${f.severity}</span>
         <span class="finding-card__confidence">${f.confidence}</span>
-        <span class="finding-card__confidence">score: ${f.score}</span>
+        <span class="finding-card__confidence">score: ${f.score}${f.scoreModifiers?.length > 0 ? ` (base ${f.baseScore})` : ''}</span>
       </div>
+      ${f.scoreModifiers?.length > 0 ? `<div class="finding-card__modifiers">${f.scoreModifiers.map((m) => `<span class="modifier-tag modifier-tag--${m.delta > 0 ? 'up' : 'down'}">${m.delta > 0 ? '+' : ''}${m.delta} ${m.reason}</span>`).join('')}</div>` : ''}
       <div class="finding-card__title">${title}</div>
       ${locationHtml}
       ${f.contextNote ? `<div class="finding-card__context">${f.contextNote}</div>` : ''}

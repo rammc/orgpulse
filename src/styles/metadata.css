@@ -315,6 +315,32 @@
   margin-top: 0.3rem;
 }
 
+.finding-card__modifiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+}
+
+.modifier-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  padding: 0.08rem 0.3rem;
+  border-radius: 100px;
+}
+
+.modifier-tag--up {
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--red);
+  border: 1px solid rgba(248, 113, 113, 0.14);
+}
+
+.modifier-tag--down {
+  background: rgba(52, 211, 153, 0.06);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.18);
+}
+
 @media (max-width: 768px) {
   .signal-breakdown__item {
     flex-direction: column;
