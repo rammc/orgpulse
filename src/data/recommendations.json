@@ -53,12 +53,7 @@
         "title": "Enable Skinny Tables for Large Objects",
         "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow — maximum 100 columns — and remember they're rebuilt asynchronously after schema changes.",
         "tags": ["SOQL", "Large Data Volumes", "Support Case"],
-        "relevant_signals": [
-          "db_cpu_time",
-          "slow_soql",
-          "slow_transactions",
-          "total_cpu_time"
-        ],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "total_cpu_time"],
         "root_cause_types": ["data"],
         "references": [
           {
@@ -206,12 +201,7 @@
         "title": "Adopt Data Cloud (D360) for Unified Customer Profiles",
         "body": "For orgs struggling with fragmented customer data across Sales, Service, Marketing, and external systems: implement Salesforce Data Cloud (D360). It unifies profiles through Identity Resolution, provides Calculated and Streaming Insights, and is the foundation for Agentforce. Use Data Spaces to separate brand, region, or business unit data. Prefer a single Home Org with Companion Orgs (Data Cloud One) over multiple Data Cloud instances. Critical: plan for Data Cloud access even if not immediately needed — it's an Agentforce prerequisite.",
         "tags": ["Data Cloud", "Architecture", "Agentforce"],
-        "relevant_signals": [
-          "db_cpu_time",
-          "slow_soql",
-          "successful_logins",
-          "slow_transactions"
-        ],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "successful_logins", "slow_transactions"],
         "root_cause_types": ["data", "integration"],
         "references": [
           {
@@ -228,12 +218,7 @@
         "title": "Zero Copy Federation with External Data Warehouses",
         "body": "For high-volume historical data (>10M records) or data sovereignty requirements: federate Snowflake, BigQuery, Databricks, or Redshift into Data Cloud via Zero Copy — no duplication, no ETL pipelines. Use Live Query for operational dashboards, Accelerated Query (caching) for frequent access patterns, and File Federation for petabyte-scale ML/AI workloads. Keep source systems in the same cloud region as Data Cloud. This eliminates Salesforce storage limits and keeps data governance in the source system.",
         "tags": ["Data Cloud", "Zero Copy", "Snowflake", "BigQuery"],
-        "relevant_signals": [
-          "db_cpu_time",
-          "slow_soql",
-          "slow_transactions",
-          "successful_logins"
-        ],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "successful_logins"],
         "root_cause_types": ["data", "integration"],
         "references": [
           {

@@ -240,7 +240,7 @@ function renderRecommendationCard(rec, dimmed) {
               label = lastSegment;
             }
           }
-        } catch (_e) {
+        } catch {
           /* keep default label */
         }
         return `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">${typeIcon} ${label} &#8599;</a>`;
