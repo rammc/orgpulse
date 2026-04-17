@@ -394,6 +394,20 @@
   border: 1px solid rgba(52, 211, 153, 0.18);
 }
 
+/* ============ Top Pattern Links ============ */
+
+.top-pattern-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-border);
+  padding-bottom: 1px;
+  transition: border-color 0.15s;
+}
+
+.top-pattern-link:hover {
+  border-bottom-style: solid;
+}
+
 /* ============ Pattern Overflow ============ */
 
 .pattern-overflow__toggle {

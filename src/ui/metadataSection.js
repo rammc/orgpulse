@@ -246,7 +246,7 @@ function buildCausalSummary(signals, findings) {
       topPatterns: Object.entries(patternCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
-        .map(([p, c]) => ({ name: getPatternMeta(p).displayName, count: c })),
+        .map(([p, c]) => ({ pattern: p, name: getPatternMeta(p).displayName, count: c })),
     });
   }
 
@@ -271,7 +271,7 @@ function renderCausalSummary(signals, findings) {
     <li class="signal-breakdown__item">
       <code class="signal-breakdown__name">${sb.signal}</code>
       <span class="signal-breakdown__detail">
-        ${sb.count} findings · ${sb.topPatterns.map((tp) => `${tp.name} (${tp.count})`).join(', ')}
+        ${sb.count} findings · ${sb.topPatterns.map((tp) => `<a href="#pattern-${tp.pattern.toLowerCase().replace(/_/g, '-')}" class="top-pattern-link" onclick="window._expandPattern('pattern-${tp.pattern.toLowerCase().replace(/_/g, '-')}'); return false;">${tp.name} (${tp.count})</a>`).join(', ')}
       </span>
     </li>`
     )
@@ -467,3 +467,12 @@ function renderFindingCard(f) {
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+window._expandPattern = function (groupId) {
+  const group = document.getElementById(groupId);
+  if (!group) return;
+  if (!group.hasAttribute('open')) group.setAttribute('open', '');
+  const parentSection = group.closest('.finding-section');
+  if (parentSection && !parentSection.hasAttribute('open')) parentSection.setAttribute('open', '');
+  setTimeout(() => group.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+};
