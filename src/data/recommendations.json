@@ -7,7 +7,7 @@
     "title": "Quick Wins",
     "priority_label": "Implement Now",
     "subtitle": "Maximum performance impact with minimal effort — can be implemented immediately without release risk.",
-    "scale_center_hint": "Scale Center → Data Storage & API Usage reveals which objects hold the most records and where unselective queries are running.",
+    "scale_center_hint": "Scale Center \u2192 Data Storage & API Usage reveals which objects hold the most records and where unselective queries are running.",
     "trigger_signals": [
       {
         "metric": "concurrent_apex_errors",
@@ -51,7 +51,7 @@
       },
       {
         "title": "Enable Skinny Tables for Large Objects",
-        "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow — maximum 100 columns — and remember they're rebuilt asynchronously after schema changes.",
+        "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow \u2014 maximum 100 columns \u2014 and remember they're rebuilt asynchronously after schema changes.",
         "tags": ["SOQL", "Large Data Volumes", "Support Case"],
         "relevant_signals": [
           "db_cpu_time",
@@ -92,8 +92,8 @@
     "icon": "target",
     "title": "Prioritize",
     "priority_label": "Schedule Next Sprint",
-    "subtitle": "High performance impact with moderate effort — schedule for the next sprint or release cycle.",
-    "scale_center_hint": "Scale Center → Apex Executions & Concurrent Requests show how close you are to Apex Governor Limits and where concurrency bottlenecks exist.",
+    "subtitle": "High performance impact with moderate effort \u2014 schedule for the next sprint or release cycle.",
+    "scale_center_hint": "Scale Center \u2192 Apex Executions & Concurrent Requests show how close you are to Apex Governor Limits and where concurrency bottlenecks exist.",
     "trigger_signals": [
       {
         "metric": "concurrent_apex_errors",
@@ -142,7 +142,7 @@
       },
       {
         "title": "Implement One Trigger Per Object with Handler Pattern",
-        "body": "Consolidate all logic for each SObject into a single trigger delegating to a Trigger Handler class. Use a framework like Trigger Actions Framework (metadata-driven) or fflib-apex-common for enterprise-grade structure. Benefits: deterministic execution order, prevention of recursion, clear separation of concerns, and easier bulkification. Ensure all SOQL and DML is outside loops — design methods to accept and return collections (List, Map, Set).",
+        "body": "Consolidate all logic for each SObject into a single trigger delegating to a Trigger Handler class. Use a framework like Trigger Actions Framework (metadata-driven) or fflib-apex-common for enterprise-grade structure. Benefits: deterministic execution order, prevention of recursion, clear separation of concerns, and easier bulkification. Ensure all SOQL and DML is outside loops \u2014 design methods to accept and return collections (List, Map, Set).",
         "tags": ["Apex", "Triggers", "Architecture"],
         "relevant_signals": [
           "concurrent_apex_errors",
@@ -164,7 +164,7 @@
       },
       {
         "title": "Row Lock Analysis and Mitigation",
-        "body": "Row Locks occur when parallel DML operations target the same records — especially common during data loads against parent-child hierarchies. Use Scale Center's Row Lock investigation to identify affected objects and entry points. Mitigation: sort batch input by parent Id to prevent lock escalation, offload to Queueable Apex with ordered processing, and avoid recursive triggers that amplify contention. Consider Change Data Capture for downstream systems instead of synchronous DML chains.",
+        "body": "Row Locks occur when parallel DML operations target the same records \u2014 especially common during data loads against parent-child hierarchies. Use Scale Center's Row Lock investigation to identify affected objects and entry points. Mitigation: sort batch input by parent Id to prevent lock escalation, offload to Queueable Apex with ordered processing, and avoid recursive triggers that amplify contention. Consider Change Data Capture for downstream systems instead of synchronous DML chains.",
         "tags": ["Apex", "Concurrency", "Data Model"],
         "relevant_signals": ["row_lock_errors", "concurrent_dml", "concurrent_apex_errors"],
         "root_cause_types": ["concurrency"],
@@ -187,8 +187,8 @@
     "icon": "compass",
     "title": "Strategic",
     "priority_label": "Plan Strategically",
-    "subtitle": "High performance impact but significant effort required — plan as a strategic initiative with a clear business case.",
-    "scale_center_hint": "Scale Center → sustained DB CPU growth, slow SOQL patterns, and storage trajectory indicate when architectural changes are needed to keep the operational org performant.",
+    "subtitle": "High performance impact but significant effort required \u2014 plan as a strategic initiative with a clear business case.",
+    "scale_center_hint": "Scale Center \u2192 sustained DB CPU growth, slow SOQL patterns, and storage trajectory indicate when architectural changes are needed to keep the operational org performant.",
     "trigger_signals": [
       {
         "metric": "successful_logins",
@@ -227,7 +227,7 @@
       },
       {
         "title": "Zero Copy Federation to Offload Large Data Volumes",
-        "body": "When queries against very large tables (>50M records) cause sustained DB CPU spikes and Skinny Tables or indexes no longer provide sufficient relief: federate the data to Snowflake, BigQuery, Databricks, or Redshift via Zero Copy. Historical analytics, reporting, and ML workloads can run against the federated source without duplicating data or consuming Salesforce storage. Use File Federation for petabyte-scale historical data, Accelerated Query (caching) for frequent access patterns. Keep source systems in the same cloud region as the federation endpoint. This is a performance remediation, not a marketing initiative — pursue when traditional LDV patterns have been exhausted.",
+        "body": "When queries against very large tables (>50M records) cause sustained DB CPU spikes and Skinny Tables or indexes no longer provide sufficient relief: federate the data to Snowflake, BigQuery, Databricks, or Redshift via Zero Copy. Historical analytics, reporting, and ML workloads can run against the federated source without duplicating data or consuming Salesforce storage. Use File Federation for petabyte-scale historical data, Accelerated Query (caching) for frequent access patterns. Keep source systems in the same cloud region as the federation endpoint. This is a performance remediation, not a marketing initiative \u2014 pursue when traditional LDV patterns have been exhausted.",
         "tags": ["Zero Copy", "Large Data Volumes", "Snowflake", "BigQuery"],
         "relevant_signals": [
           "db_cpu_time",
@@ -267,7 +267,7 @@
       },
       {
         "title": "Org Split or Multi-Org Rationalization",
-        "body": "For fundamental scalability challenges where the org has reached structural platform limits (metadata complexity, data storage, concurrent Apex execution, governance friction between business units): evaluate Org Split by business unit, region, or brand. Conversely, for organizations with multiple orgs that evolved organically without strategy: evaluate consolidation. Both directions are high-effort multi-year initiatives requiring executive sponsorship, careful data migration, integration redesign, and change management. Important distinction: Data Cloud does NOT resolve operational scalability issues of a single overloaded org — it addresses data fragmentation across multiple orgs by unifying profiles. Use Data Cloud when you need a unified customer view, not as a substitute for architectural remediation in the operational org itself.",
+        "body": "For fundamental scalability challenges where the org has reached structural platform limits (metadata complexity, data storage, concurrent Apex execution, governance friction between business units): evaluate Org Split by business unit, region, or brand. Conversely, for organizations with multiple orgs that evolved organically without strategy: evaluate consolidation. Both directions are high-effort multi-year initiatives requiring executive sponsorship, careful data migration, integration redesign, and change management. Important distinction: Data Cloud does NOT resolve operational scalability issues of a single overloaded org \u2014 it addresses data fragmentation across multiple orgs by unifying profiles. Use Data Cloud when you need a unified customer view, not as a substitute for architectural remediation in the operational org itself.",
         "tags": ["Architecture", "Strategy", "Governance"],
         "relevant_signals": ["*"],
         "root_cause_types": ["compute", "data", "concurrency"],
@@ -290,8 +290,8 @@
     "icon": "package",
     "title": "Take Along",
     "priority_label": "Pick Up Opportunistically",
-    "subtitle": "Moderate impact with low effort — include in your next deployment when you're already working in the area.",
-    "scale_center_hint": "Scale Center → API Usage shows callout volume and which Connected Apps generate the most requests.",
+    "subtitle": "Moderate impact with low effort \u2014 include in your next deployment when you're already working in the area.",
+    "scale_center_hint": "Scale Center \u2192 API Usage shows callout volume and which Connected Apps generate the most requests.",
     "trigger_signals": [
       {
         "metric": "total_callout_errors",
@@ -307,7 +307,7 @@
     "recommendations": [
       {
         "title": "Migrate Imperative Apex Calls to Wire Adapters",
-        "body": "In LWCs, replace imperative Apex calls with @wire decorators on cacheable Apex methods. Wire adapters enable automatic caching via Lightning Data Service, reactive updates on record changes, and eliminate duplicate server round-trips. For complex queries across multiple objects, prefer the GraphQL Wire Adapter (lightning/graphql) over custom Apex — it provides precise field selection, eliminates over-fetching, and reduces field dependencies in the cache.",
+        "body": "In LWCs, replace imperative Apex calls with @wire decorators on cacheable Apex methods. Wire adapters enable automatic caching via Lightning Data Service, reactive updates on record changes, and eliminate duplicate server round-trips. For complex queries across multiple objects, prefer the GraphQL Wire Adapter (lightning/graphql) over custom Apex \u2014 it provides precise field selection, eliminates over-fetching, and reduces field dependencies in the cache.",
         "tags": ["LWC", "Performance", "Wire Adapters"],
         "relevant_signals": [
           "ui_request_time",
@@ -342,7 +342,7 @@
       },
       {
         "title": "Audit and Consolidate Flows, Retire Process Builder",
-        "body": "Process Builder has been retired — migrate remaining Process Builder automations to Flow immediately. Then audit all Flows: multiple record-triggered Flows on the same object multiply DML evaluations on every save. Consolidate into a single Before-Save Flow per object where possible, and move heavy logic to Apex where Flow becomes inefficient (especially loops over large collections).",
+        "body": "Process Builder has been retired \u2014 migrate remaining Process Builder automations to Flow immediately. Then audit all Flows: multiple record-triggered Flows on the same object multiply DML evaluations on every save. Consolidate into a single Before-Save Flow per object where possible, and move heavy logic to Apex where Flow becomes inefficient (especially loops over large collections).",
         "tags": ["Configuration", "Automation", "Cleanup"],
         "relevant_signals": ["total_cpu_time", "apex_execution_time", "concurrent_apex_errors"],
         "root_cause_types": ["configuration", "compute"],
@@ -365,8 +365,8 @@
     "icon": "search",
     "title": "Evaluate",
     "priority_label": "Analyze & Decide",
-    "subtitle": "Moderate impact with moderate effort — conduct a detailed evaluation before committing resources.",
-    "scale_center_hint": "Scale Center → Login Metrics & Failed Logins reveal authentication issues and potentially unauthorized access attempts.",
+    "subtitle": "Moderate impact with moderate effort \u2014 conduct a detailed evaluation before committing resources.",
+    "scale_center_hint": "Scale Center \u2192 Login Metrics & Failed Logins reveal authentication issues and potentially unauthorized access attempts.",
     "trigger_signals": [
       {
         "metric": "failed_logins",
@@ -409,7 +409,7 @@
       },
       {
         "title": "Login Failure Root Cause Analysis",
-        "body": "Investigate login failure causes: locked accounts, misconfigured password policies, SSO configuration errors, IP range restrictions, or expired OAuth tokens. Use Login History and Event Monitoring (Login Event, Login As Event) for forensic analysis. Sustained failed logins often indicate misconfigured Connected Apps, expired certificates in SAML/OIDC flows, or credential stuffing attacks — the latter requires MFA enforcement and IP allowlisting.",
+        "body": "Investigate login failure causes: locked accounts, misconfigured password policies, SSO configuration errors, IP range restrictions, or expired OAuth tokens. Use Login History and Event Monitoring (Login Event, Login As Event) for forensic analysis. Sustained failed logins often indicate misconfigured Connected Apps, expired certificates in SAML/OIDC flows, or credential stuffing attacks \u2014 the latter requires MFA enforcement and IP allowlisting.",
         "tags": ["Security", "Identity", "Monitoring"],
         "relevant_signals": ["failed_logins", "error_rate"],
         "root_cause_types": ["configuration"],
@@ -445,8 +445,8 @@
     "icon": "scale",
     "title": "Weigh Up",
     "priority_label": "Justify ROI First",
-    "subtitle": "Moderate impact with high effort — only pursue with a clear ROI justification and stakeholder alignment.",
-    "scale_center_hint": "Scale Center → Concurrent UI Errors indicate frontend performance issues that may point to deeper architectural concerns.",
+    "subtitle": "Moderate impact with high effort \u2014 only pursue with a clear ROI justification and stakeholder alignment.",
+    "scale_center_hint": "Scale Center \u2192 Concurrent UI Errors indicate frontend performance issues that may point to deeper architectural concerns.",
     "trigger_signals": [
       {
         "metric": "concurrent_ui_errors",
@@ -462,7 +462,7 @@
     "recommendations": [
       {
         "title": "Adopt GraphQL Wire Adapter for Data-Heavy LWCs",
-        "body": "Replace imperative Apex calls and multiple LDS wire adapters with the GraphQL Wire Adapter (lightning/graphql). Benefits: precise field selection eliminates over-fetching, multiple related objects in one query, rich filtering and pagination via cursor-based predicates, and reduced cache invalidation. Use variables for reactivity (not string interpolation), mark optional fields with @optional for FLS-graceful degradation, and avoid totalCount on large queries — it forces a full record scan. For mutations, continue using LDS or imperative Apex (GraphQL mutations are not yet supported on the platform).",
+        "body": "Replace imperative Apex calls and multiple LDS wire adapters with the GraphQL Wire Adapter (lightning/graphql). Benefits: precise field selection eliminates over-fetching, multiple related objects in one query, rich filtering and pagination via cursor-based predicates, and reduced cache invalidation. Use variables for reactivity (not string interpolation), mark optional fields with @optional for FLS-graceful degradation, and avoid totalCount on large queries \u2014 it forces a full record scan. For mutations, continue using LDS or imperative Apex (GraphQL mutations are not yet supported on the platform).",
         "tags": ["LWC", "GraphQL", "Performance"],
         "relevant_signals": [
           "concurrent_ui_errors",
@@ -525,13 +525,13 @@
     "icon": "leaf",
     "title": "Opportunistic",
     "priority_label": "When Convenient",
-    "subtitle": "Low impact with low effort — pick up opportunistically when you're already working in the area.",
-    "scale_center_hint": "Scale Center → API Usage Trends show whether API consumption can be optimized.",
+    "subtitle": "Low impact with low effort \u2014 pick up opportunistically when you're already working in the area.",
+    "scale_center_hint": "Scale Center \u2192 API Usage Trends show whether API consumption can be optimized.",
     "trigger_signals": [{ "keywords": ["api optimization", "cleanup", "tech debt"] }],
     "recommendations": [
       {
         "title": "Clean Up Unused Custom Fields and Metadata",
-        "body": "Identify Custom Fields with zero data population using the Field Usage report, Salesforce Optimizer, or third-party metadata analysis tools. Delete or archive unused fields to reduce object complexity, improve developer experience, speed up describe calls, and simplify LWC data contracts. Equally important: remove unused Custom Objects, Custom Labels, and inactive Validation Rules — they all add cognitive overhead and slow metadata operations.",
+        "body": "Identify Custom Fields with zero data population using the Field Usage report, Salesforce Optimizer, or third-party metadata analysis tools. Delete or archive unused fields to reduce object complexity, improve developer experience, speed up describe calls, and simplify LWC data contracts. Equally important: remove unused Custom Objects, Custom Labels, and inactive Validation Rules \u2014 they all add cognitive overhead and slow metadata operations.",
         "tags": ["Cleanup", "Data Model", "Governance"],
         "relevant_signals": ["*"],
         "root_cause_types": ["data", "configuration"],
@@ -620,7 +620,7 @@
     "icon": "x-circle",
     "title": "Skip",
     "priority_label": "Consciously Decline",
-    "subtitle": "Low impact with high effort — a deliberate decision not to pursue these measures. Document the rationale.",
+    "subtitle": "Low impact with high effort \u2014 a deliberate decision not to pursue these measures. Document the rationale.",
     "scale_center_hint": "These recommendations appear in best-practice guides but deliver insufficient ROI in the context of your specific org's performance profile.",
     "trigger_signals": [],
     "recommendations": [
@@ -634,7 +634,7 @@
       },
       {
         "title": "Custom UI Replacing Standard Features",
-        "body": "Building custom Lightning Web Components to replace standard features (List Views, Related Lists, Reports, Dashboards) creates significant ongoing maintenance burden. The effort to keep parity with Salesforce's evolving standard features — new base components, SLDS updates, Dynamic Forms, Dynamic Related Lists — almost always exceeds the benefit. Extend standard functionality with Quick Actions, Flow, or focused LWCs on record pages instead of replacing it wholesale.",
+        "body": "Building custom Lightning Web Components to replace standard features (List Views, Related Lists, Reports, Dashboards) creates significant ongoing maintenance burden. The effort to keep parity with Salesforce's evolving standard features \u2014 new base components, SLDS updates, Dynamic Forms, Dynamic Related Lists \u2014 almost always exceeds the benefit. Extend standard functionality with Quick Actions, Flow, or focused LWCs on record pages instead of replacing it wholesale.",
         "tags": ["LWC", "Strategy", "Anti-Pattern"],
         "relevant_signals": ["*"],
         "root_cause_types": ["compute"],
