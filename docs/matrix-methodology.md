@@ -27,31 +27,31 @@ Impact      ├────────────┼────────�
 ## Cell Descriptions
 
 ### Quick Wins (High Impact / Low Effort) — Green
-**Sofort umsetzen.** Maximum performance gain with minimal work. These are the first things you should address. Examples: adding custom indexes, consolidating sharing rules.
+**Implement Now.** Maximum performance gain with minimal work. These are the first things you should address. Examples: adding custom indexes, consolidating sharing rules.
 
 ### Prioritize (High Impact / Medium Effort) — Green
-**Zeitnah einplanen.** Significant improvement that requires moderate effort. Schedule these for the next sprint. Examples: Apex CPU optimization, trigger bulkification, row lock mitigation.
+**Schedule Next Sprint.** Significant improvement that requires moderate effort. Schedule these for the next sprint. Examples: Apex CPU optimization, trigger bulkification, row lock mitigation.
 
 ### Strategic (High Impact / High Effort) — Yellow
-**Strategisch planen.** Major improvement potential but requires significant investment. Needs a business case and project planning. Examples: event-driven architecture, data model overhaul, org split evaluation.
+**Plan Strategically.** Major improvement potential but requires significant investment. Needs a business case and project planning. Examples: event-driven architecture, data model overhaul, org split evaluation.
 
 ### Take Along (Medium Impact / Low Effort) — Green
-**Mitnehmen.** Worth doing when you're already working in the area. Low effort makes them easy to include. Examples: improving callout error handling, deactivating unused flows.
+**Pick Up Opportunistically.** Worth doing when you're already working in the area. Low effort makes them easy to include. Examples: improving callout error handling, deactivating unused flows.
 
 ### Evaluate (Medium Impact / Medium Effort) — Yellow
-**Evaluieren.** Requires analysis to determine if the ROI justifies the work. Examples: login failure root-cause analysis, integration pattern review.
+**Analyze & Decide.** Requires analysis to determine if the ROI justifies the work. Examples: login failure root-cause analysis, integration pattern review.
 
 ### Weigh Up (Medium Impact / High Effort) — Orange
-**Sorgfaltig abwagen.** Only pursue with clear ROI justification. The effort is high relative to the impact. Examples: LWC performance audit, Aura-to-LWC migration.
+**Justify ROI First.** Only pursue with clear ROI justification. The effort is high relative to the impact. Examples: LWC performance audit, Aura-to-LWC migration.
 
 ### Opportunistic (Low Impact / Low Effort) — Yellow
-**Bei Gelegenheit.** Nice-to-have improvements you pick up opportunistically. Examples: cleaning up unused custom fields, optimizing debug log levels.
+**When Convenient.** Nice-to-have improvements you pick up opportunistically. Examples: cleaning up unused custom fields, optimizing debug log levels.
 
 ### Defer (Low Impact / Medium Effort) — Orange
-**Zuruckstellen.** Put on the backlog but don't actively prioritize. Examples: increasing test coverage, migrating from profiles to permission sets.
+**Backlog.** Put on the backlog but don't actively prioritize. Examples: increasing test coverage, migrating from profiles to permission sets.
 
 ### Skip (Low Impact / High Effort) — Red
-**Bewusst nicht umsetzen.** Consciously decide not to pursue these. The effort far outweighs the benefit. Examples: complete Apex rewrite, building custom UI replacements for standard features.
+**Consciously Decline.** Consciously decide not to pursue these. The effort far outweighs the benefit. Examples: complete Apex rewrite, building custom UI replacements for standard features.
 
 ## Color Coding
 
@@ -77,9 +77,25 @@ These assessments are based on the experience of Salesforce architects working w
 
 When a user uploads a Scale Center screenshot, OrgPulse automatically highlights relevant matrix cells:
 
-- **Basic Mode (OCR):** Extracts counter values and applies threshold rules (e.g., `row_lock_errors > 0` highlights "Prioritize")
-- **Deep Mode (Vision AI):** Claude analyzes charts and patterns, mapping each finding to a specific matrix cell with a confidence score
+- **Basic Mode (OCR):** Extracts counter values and applies threshold-based scoring rules from `recommendations.json` (e.g., `concurrent_apex_errors: 6-25` scores as warning)
+- **Deep Mode (Vision AI):** Claude analyzes charts and patterns, mapping each finding to a specific matrix cell with severity, root cause type, and a confidence score
+- **Validation:** All Vision findings are validated against a known metric vocabulary. Hallucinated metric names are rejected.
+- **Scoring:** Each signal earns points (info=1, warning=3, critical=5). Cell scores determine severity level: 1-3=low, 4-7=medium, 8+=high.
 
-The trigger rules are defined in two places:
-- `src/js/recommendations.js` — hardcoded threshold rules for OCR counters
-- `src/data/recommendations.json` — `trigger_signals` field per cell (used for documentation and future extensibility)
+The trigger rules and thresholds are defined in `recommendations.json` under the `trigger_signals` field per cell. The scoring engine in `recommendations.js` reads these thresholds at runtime.
+
+## Modernization Philosophy
+
+The recommendations in OrgPulse are curated to favor current Salesforce best practices over legacy patterns. Specifically:
+
+- **LWC and GraphQL Wire Adapter** as the primary data access pattern for complex queries
+- **Data Cloud (D360)** for unified customer profiles and Agentforce readiness
+- **Zero Copy Federation** for avoiding Salesforce storage limits without ETL
+- **WITH USER_MODE** for CRUD, FLS, and sharing enforcement in a single keyword
+- **Named Credentials + External Credentials** (the Winter '23 split) for integrations
+- **Platform Events + Change Data Capture via Pub/Sub API** for event-driven architectures
+- **Permission Set Groups** as the strategic direction over Profile-based permissions
+
+Legacy patterns are still mentioned where they serve as transition guidance or where retired features require explicit call-out (e.g., Process Builder migration).
+
+Recommendations are reviewed and refreshed regularly. The `updated` field on each cell reflects the most recent content revision.
