@@ -202,6 +202,38 @@ function bindDetailPanel() {
 }
 
 function renderRecommendationCard(rec, dimmed) {
+  // Build reference links with human-readable labels
+  let refsHtml = '';
+  if (rec.references && rec.references.length > 0) {
+    const refLinks = rec.references
+      .map((ref) => {
+        const typeIcon =
+          ref.type === 'official_docs'
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+        // Derive label from URL
+        let label = ref.type === 'official_docs' ? 'Salesforce Docs' : 'Community Resource';
+        try {
+          const url = new URL(ref.url);
+          const path = url.pathname.split('/').filter(Boolean);
+          if (path.length > 0) {
+            const lastSegment = path[path.length - 1]
+              .replace(/\.htm$/, '')
+              .replace(/[_-]/g, ' ')
+              .replace(/\b\w/g, (c) => c.toUpperCase());
+            if (lastSegment.length > 3 && lastSegment.length < 60) {
+              label = lastSegment;
+            }
+          }
+        } catch (_e) {
+          /* keep default label */
+        }
+        return `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">${typeIcon} ${label} &#8599;</a>`;
+      })
+      .join('');
+    refsHtml = `<div class="recommendation-card__refs">${refLinks}</div>`;
+  }
+
   return `
     <div class="recommendation-card${dimmed ? ' recommendation-card--dimmed' : ''}">
       <div class="recommendation-card__title">${rec.title}</div>
@@ -209,18 +241,7 @@ function renderRecommendationCard(rec, dimmed) {
       <div class="recommendation-card__tags">
         ${rec.tags.map((t) => `<span class="tag">${t}</span>`).join('')}
       </div>
-      ${
-        rec.references && rec.references.length > 0
-          ? `<div class="recommendation-card__refs">
-              ${rec.references
-                .map(
-                  (ref) =>
-                    `<a class="recommendation-card__ref" href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.type === 'official_docs' ? 'Salesforce Docs' : 'Reference'} &#8599;</a>`
-                )
-                .join(' ')}
-            </div>`
-          : ''
-      }
+      ${refsHtml}
     </div>
   `;
 }
@@ -339,12 +360,23 @@ function openDetailPanel(cellId) {
     recsHtml = `<div class="no-recs-fallback">No specific recommendations for this cell.</div>`;
   }
 
+  // Timestamp at bottom of detail panel
+  let timestampHtml = '';
+  if (data.added) {
+    if (data.updated && data.updated !== data.added) {
+      timestampHtml = `<div class="detail-panel__timestamp">Added ${data.added} · Updated ${data.updated}</div>`;
+    } else {
+      timestampHtml = `<div class="detail-panel__timestamp">Added ${data.added}</div>`;
+    }
+  }
+
   body.innerHTML = `
     ${signalsHtml}
     ${aiInsightsHtml}
     <div class="detail-panel__hint">${data.scale_center_hint}</div>
     <p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; line-height: 1.6;">${data.subtitle}</p>
     ${recsHtml}
+    ${timestampHtml}
   `;
 
   panel.classList.add('detail-panel--visible');

@@ -1578,6 +1578,17 @@ h3 {
   border: 1px dashed var(--border);
 }
 
+/* ============ Detail Panel Timestamp ============ */
+
+.detail-panel__timestamp {
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
 /* ============ Clearances ============ */
 
 .clearances {
