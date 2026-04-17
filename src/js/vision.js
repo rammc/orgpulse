@@ -199,6 +199,12 @@ Return ONLY valid JSON matching the provided schema.`,
     /unified customer profile/i,
     /marketing cloud/i,
     /commerce cloud/i,
+    /permission set group/i,
+    /test coverage/i,
+    /code coverage/i,
+    /WITH USER_MODE/i,
+    /WITH SECURITY_ENFORCED/i,
+    /devops/i,
   ];
 
   let filteredHintCount = 0;
