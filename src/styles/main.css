@@ -1275,6 +1275,12 @@ h3 {
   border: 1px solid var(--accent-border);
 }
 
+.tag--modern {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
 .recommendation-card__refs {
   margin-top: 0.4rem;
 }

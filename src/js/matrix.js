@@ -28,6 +28,21 @@ const ICONS = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
 };
 
+const MODERN_PATTERN_TAGS = new Set([
+  'GraphQL',
+  'Data Cloud',
+  'Zero Copy',
+  'USER_MODE',
+  'Named Credentials',
+  'Platform Events',
+  'CDC',
+  'Pub/Sub API',
+  'Permission Set Groups',
+  'Agentforce',
+  'Dynamic Forms',
+  'Trigger Actions Framework',
+]);
+
 // State
 let recommendationsData = [];
 let selectedFile = null;
@@ -239,7 +254,7 @@ function renderRecommendationCard(rec, dimmed) {
       <div class="recommendation-card__title">${rec.title}</div>
       <div class="recommendation-card__body">${rec.body}</div>
       <div class="recommendation-card__tags">
-        ${rec.tags.map((t) => `<span class="tag">${t}</span>`).join('')}
+        ${rec.tags.map((t) => `<span class="tag${MODERN_PATTERN_TAGS.has(t) ? ' tag--modern' : ''}">${t}</span>`).join('')}
       </div>
       ${refsHtml}
     </div>
@@ -345,7 +360,15 @@ function openDetailPanel(cellId) {
       const hiddenCards = filtered.hidden
         .map((rec) => renderRecommendationCard(rec, true))
         .join('');
+      const modernHidden = filtered.hidden.filter((rec) =>
+        rec.tags.some((t) => MODERN_PATTERN_TAGS.has(t))
+      );
+      const modernHint =
+        modernHidden.length > 0
+          ? `<div class="recs-count" style="margin-top:0.25rem; opacity:0.7">+ ${modernHidden.length} additional modern pattern${modernHidden.length > 1 ? 's' : ''} not matched by current signals</div>`
+          : '';
       hiddenSection = `
+        ${modernHint}
         <button class="show-all-toggle" onclick="this.closest('.detail-panel__body').querySelector('.hidden-recs').classList.toggle('hidden-recs--visible'); this.textContent = this.textContent.includes('Show') ? 'Hide additional recommendations' : 'Show all recommendations for this cell'">
           Show all recommendations for this cell
         </button>
