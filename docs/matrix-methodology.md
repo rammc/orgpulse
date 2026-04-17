@@ -86,16 +86,14 @@ The trigger rules and thresholds are defined in `recommendations.json` under the
 
 ## Modernization Philosophy
 
-The recommendations in OrgPulse are curated to favor current Salesforce best practices over legacy patterns. Specifically:
+OrgPulse favors current Salesforce patterns over legacy approaches — but only when the modern pattern directly addresses a performance concern measurable in Scale Center. The prioritization is:
 
-- **LWC and GraphQL Wire Adapter** as the primary data access pattern for complex queries
-- **Data Cloud (D360)** for unified customer profiles and Agentforce readiness
-- **Zero Copy Federation** for avoiding Salesforce storage limits without ETL
-- **WITH USER_MODE** for CRUD, FLS, and sharing enforcement in a single keyword
-- **Named Credentials + External Credentials** (the Winter '23 split) for integrations
-- **Platform Events + Change Data Capture via Pub/Sub API** for event-driven architectures
-- **Permission Set Groups** as the strategic direction over Profile-based permissions
+1. **Measurement first:** Every recommendation must be traceable to an observable Scale Center signal (counter value, chart pattern, or derived correlation).
 
-Legacy patterns are still mentioned where they serve as transition guidance or where retired features require explicit call-out (e.g., Process Builder migration).
+2. **Modern over legacy, when the impact is performance:** GraphQL Wire Adapter over imperative Apex, WITH USER_MODE over WITH SECURITY_ENFORCED, Platform Events over synchronous callout chains, Queueable over @future, Trigger Actions Framework over ad-hoc triggers.
 
-Recommendations are reviewed and refreshed regularly. The `updated` field on each cell reflects the most recent content revision.
+3. **Excluded from OrgPulse:** Recommendations whose primary value is customer experience, data unification, or cross-cloud strategy (e.g., Data Cloud for Identity Resolution, Agentforce adoption). These are valuable initiatives but not measurable via Scale Center — they belong in other tools.
+
+4. **Included even when modern:** Zero Copy Federation appears in OrgPulse when it serves as performance remediation for very large tables (>50M records). It is NOT included as a generic Data Cloud capability.
+
+Legacy patterns are mentioned only as transition targets or where retired features require explicit call-out (e.g., Process Builder migration guidance).

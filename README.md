@@ -19,6 +19,23 @@ The session demonstrated how AI-assisted screenshot analysis combined with a str
 
 OrgPulse turns your Scale Center Org Performance screenshots into actionable optimization recommendations. Upload a screenshot, and OrgPulse identifies performance hotspots, validates them against known Scale Center metrics, and maps them to a proven 9-field prioritization matrix (Impact vs. Effort).
 
+## Scope
+
+OrgPulse is a **performance diagnostic tool**. It reads Scale Center screenshots and maps observed performance signals (CPU time, request latency, error counters, concurrency issues) to a prioritized remediation matrix.
+
+**What OrgPulse does:**
+- Extract counter values via in-browser OCR
+- Interpret chart patterns via Vision LLM (optional, BYOK)
+- Match observed signals to concrete Salesforce performance remediation steps
+- Highlight the highest-impact actions based on severity scoring
+
+**What OrgPulse does NOT do:**
+- Customer experience strategy or unified profile recommendations
+- Agentforce readiness assessment
+- Data Cloud adoption strategy (except where relevant for performance offloading)
+- Marketing, Commerce, or Service Cloud architecture guidance
+- Multi-cloud integration planning
+
 ## Features
 
 ### Basic Mode (Free, Privacy-First)

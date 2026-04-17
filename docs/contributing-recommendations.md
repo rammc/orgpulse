@@ -56,7 +56,7 @@ Recommendations are stored in `src/data/recommendations.json`. Each entry in the
 |-------|------|----------|-------------|
 | `title` | string | Yes | Short, action-oriented title (5-10 words) |
 | `body` | string | Yes | 2-4 sentence description with specific actionable advice |
-| `tags` | string[] | Yes | Technology/area tags (e.g., "Apex", "LWC", "Data Cloud") |
+| `tags` | string[] | Yes | Technology/area tags (e.g., "Apex", "LWC", "Integration") |
 | `relevant_signals` | string[] | Yes | Signal metric names that make this recommendation relevant. Use `["*"]` for universal recommendations |
 | `root_cause_types` | string[] | Yes | One or more of: `compute`, `data`, `concurrency`, `integration`, `configuration` |
 | `references` | object[] | No | Links to official documentation or community resources |
@@ -67,6 +67,24 @@ Recommendations are stored in `src/data/recommendations.json`. Each entry in the
 |-------|------|-------------|
 | `url` | string | Full URL to the reference |
 | `type` | string | `official_docs` or `community_resource` |
+
+## What Belongs in OrgPulse (and What Doesn't)
+
+OrgPulse recommendations are **performance interventions**, not strategic initiatives. Before contributing a new recommendation, confirm:
+
+**Accept criteria:**
+- The recommendation addresses a problem observable in Scale Center metrics
+- The `relevant_signals` array contains at least one signal that would realistically trigger this recommendation
+- Implementing this recommendation measurably improves one or more of: request time, CPU time, error rates, concurrency, query performance, or resource consumption
+- The recommendation is within the operational Salesforce platform scope (Apex, LWC, Data Model, Security, Integration, Automation)
+
+**Reject criteria — do not contribute:**
+- Recommendations whose primary value is customer experience or data unification
+- Generic "adopt Data Cloud" or "adopt Agentforce" recommendations
+- Strategic initiatives without a direct performance remediation angle
+- Marketing, Commerce, or Service Cloud feature adoption guidance
+
+When in doubt, ask: "Would this recommendation appear to a user whose only visible symptom is a Scale Center metric?" If the answer requires external context (a CxO meeting, a strategic review, a business case discussion), it is out of scope for OrgPulse.
 
 ## Contributing Modern Patterns
 
@@ -81,7 +99,7 @@ OrgPulse prioritizes current Salesforce best practices over legacy approaches. W
 | Platform Events + CDC via Pub/Sub API | Synchronous callouts, CometD |
 | Flow (Record-Triggered, Screen, Scheduled) | Process Builder (retired) |
 | Permission Set Groups | Profile-based permissions |
-| Data Cloud + Zero Copy Federation | Manual ETL, storage limit workarounds |
+| Zero Copy Federation (for LDV performance) | Manual ETL, storage limit workarounds |
 | Queueable Apex with chaining | `@future` methods |
 | Trigger Actions Framework / fflib | Ad-hoc trigger logic |
 | Dynamic Forms, Dynamic Related Lists | Custom LWC for standard features |
