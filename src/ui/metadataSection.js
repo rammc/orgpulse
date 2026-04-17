@@ -342,7 +342,18 @@ function renderGroupedFindings(findings, container) {
             ? `<span class="pattern-critical">${pg.criticalCount} critical</span>`
             : '';
 
-        const cardsHtml = pg.findings.map((f) => renderFindingCard(f)).join('');
+        const DEFAULT_VISIBLE = 5;
+        const visibleFindings = pg.findings.slice(0, DEFAULT_VISIBLE);
+        const overflowFindings = pg.findings.slice(DEFAULT_VISIBLE);
+
+        const visibleCardsHtml = visibleFindings.map((f) => renderFindingCard(f)).join('');
+        const overflowHtml =
+          overflowFindings.length > 0
+            ? `<details class="pattern-overflow">
+      <summary class="pattern-overflow__toggle">Show ${overflowFindings.length} more finding${overflowFindings.length === 1 ? '' : 's'}</summary>
+      <div class="pattern-overflow__content">${overflowFindings.map((f) => renderFindingCard(f)).join('')}</div>
+    </details>`
+            : '';
 
         return `
         <details class="pattern-group" id="pattern-${pg.pattern.toLowerCase().replace(/_/g, '-')}"${isOpen}>
@@ -366,7 +377,7 @@ function renderGroupedFindings(findings, container) {
           </details>`
               : ''
           }
-          <div class="pattern-findings">${cardsHtml}</div>
+          <div class="pattern-findings">${visibleCardsHtml}${overflowHtml}</div>
         </details>`;
       })
       .join('');

@@ -394,6 +394,31 @@
   border: 1px solid rgba(52, 211, 153, 0.18);
 }
 
+/* ============ Pattern Overflow ============ */
+
+.pattern-overflow__toggle {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  margin: 0.35rem 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-align: center;
+  list-style: none;
+}
+
+.pattern-overflow__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.pattern-overflow__toggle:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-border);
+}
+
 @media (max-width: 768px) {
   .signal-breakdown__item {
     flex-direction: column;
