@@ -185,6 +185,134 @@ h3 {
   padding: 2rem;
 }
 
+/* ============ Onboarding ============ */
+
+.onboarding {
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.onboarding__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.onboarding__title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.onboarding__toggle {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.onboarding__toggle:hover {
+  color: var(--text);
+  border-color: var(--accent-border);
+}
+
+.onboarding__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+  transition: all var(--transition);
+}
+
+.onboarding[aria-expanded='false'] .onboarding__cards {
+  display: none;
+}
+
+.onboarding-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1.1rem;
+  transition: border-color var(--transition);
+}
+
+.onboarding-card:hover {
+  border-color: var(--border);
+}
+
+.onboarding-card__title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.7rem 0;
+}
+
+.onboarding-card__title svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.onboarding-card p {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0 0 0.6rem 0;
+}
+
+.onboarding-card p:last-of-type {
+  margin-bottom: 0;
+}
+
+.onboarding-card p strong {
+  color: var(--text);
+}
+
+.onboarding-card__cta {
+  padding: 0.5rem 0.7rem;
+  background: var(--accent-glow);
+  border-radius: 6px;
+  border-left: 2px solid var(--accent);
+}
+
+.onboarding-card__link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+
+.onboarding-card__link:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .onboarding__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ============ Upload Zone ============ */
 
 .upload-zone {

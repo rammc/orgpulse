@@ -61,11 +61,38 @@ const MATRIX_LAYOUT = [
 
 async function init() {
   initSettings();
+  initOnboarding();
   await loadRecommendations();
   renderMatrix();
   bindUpload();
   bindModeToggle();
   bindDetailPanel();
+}
+
+function initOnboarding() {
+  const section = document.getElementById('onboarding');
+  const toggle = document.getElementById('onboarding-toggle');
+  if (!section || !toggle) return;
+
+  const dismissed = localStorage.getItem('orgpulse_onboarding_dismissed') === 'true';
+  setOnboardingState(section, toggle, !dismissed);
+
+  toggle.addEventListener('click', () => {
+    const expanded = section.getAttribute('aria-expanded') === 'true';
+    setOnboardingState(section, toggle, !expanded);
+    localStorage.setItem('orgpulse_onboarding_dismissed', expanded ? 'false' : 'true');
+  });
+
+  section.querySelector('.onboarding__header').addEventListener('click', (e) => {
+    if (e.target === toggle) return;
+    toggle.click();
+  });
+}
+
+function setOnboardingState(section, toggle, expanded) {
+  section.setAttribute('aria-expanded', expanded);
+  toggle.setAttribute('aria-expanded', expanded);
+  toggle.innerHTML = expanded ? 'Collapse &#9650;' : 'Expand &#9660;';
 }
 
 async function loadRecommendations() {
