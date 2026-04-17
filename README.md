@@ -144,10 +144,10 @@ OrgPulse is an independent open-source project and is **not affiliated with, end
 
 MIT — see [LICENSE](LICENSE)
 
-## Maintainer
+## Contributors
 
-Built by [Christopher Ramm](https://cramm.dev) — Salesforce CTA, Salesforce MVP (Class of 2025), and DCX CTO Germany at Capgemini.
+[Christopher Ramm](https://cramm.dev) — Salesforce CTA, Salesforce MVP (Class of 2025), DCX CTO Germany at Capgemini.
+[cramm.dev](https://cramm.dev) · [LinkedIn](https://www.linkedin.com/in/cramm/) · [GitHub](https://github.com/cramm)
 
-- [cramm.dev](https://cramm.dev)
-- [LinkedIn](https://www.linkedin.com/in/cramm/)
-- [GitHub](https://github.com/cramm)
+[Sebastiano Schwarz](https://www.linkedin.com/in/sebastiano-schwarz/) — Salesforce CTO Capgemini Germany.
+[LinkedIn](https://www.linkedin.com/in/sebastiano-schwarz/) · [GitHub](https://github.com/svierk)
