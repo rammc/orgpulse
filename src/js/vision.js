@@ -116,6 +116,7 @@ ANALYSIS RULES:
 6. For each finding, specify root_cause_type: "compute", "data", "concurrency", "integration", or "configuration".
 7. Read the counter values from the top bar. Report the actual numbers you see.
 8. Your recommendations must be DIRECTLY CAUSED BY observable patterns in this screenshot. Do not suggest strategic initiatives (Data Cloud adoption, Agentforce implementation, customer unification) unless the metrics specifically demonstrate a performance problem that these solutions address. Stay within the scope of Scale Center performance diagnostics.
+9. DO NOT recommend: security best practices (WITH USER_MODE migrations, Permission Set Groups), test coverage improvements, DevOps practice changes, or customer experience strategies. ONLY recommend performance remediations tied to anomalies you observed in this screenshot.
 
 Return ONLY valid JSON matching the provided schema.`,
       messages: [

@@ -53,12 +53,7 @@
         "title": "Enable Skinny Tables for Large Objects",
         "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow \u2014 maximum 100 columns \u2014 and remember they're rebuilt asynchronously after schema changes.",
         "tags": ["SOQL", "Large Data Volumes", "Support Case"],
-        "relevant_signals": [
-          "db_cpu_time",
-          "slow_soql",
-          "slow_transactions",
-          "total_cpu_time"
-        ],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "total_cpu_time"],
         "root_cause_types": ["data"],
         "references": [
           {
@@ -229,12 +224,7 @@
         "title": "Zero Copy Federation to Offload Large Data Volumes",
         "body": "When queries against very large tables (>50M records) cause sustained DB CPU spikes and Skinny Tables or indexes no longer provide sufficient relief: federate the data to Snowflake, BigQuery, Databricks, or Redshift via Zero Copy. Historical analytics, reporting, and ML workloads can run against the federated source without duplicating data or consuming Salesforce storage. Use File Federation for petabyte-scale historical data, Accelerated Query (caching) for frequent access patterns. Keep source systems in the same cloud region as the federation endpoint. This is a performance remediation, not a marketing initiative \u2014 pursue when traditional LDV patterns have been exhausted.",
         "tags": ["Zero Copy", "Large Data Volumes", "Snowflake", "BigQuery"],
-        "relevant_signals": [
-          "db_cpu_time",
-          "slow_soql",
-          "slow_transactions",
-          "successful_logins"
-        ],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "successful_logins"],
         "root_cause_types": ["data"],
         "references": [
           {
