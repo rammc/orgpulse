@@ -69,8 +69,8 @@ async function init() {
 }
 
 async function loadRecommendations() {
-  const res = await fetch('./data/recommendations.json');
-  recommendationsData = await res.json();
+  const module = await import('../data/recommendations.json');
+  recommendationsData = module.default;
 }
 
 // ============ Matrix Rendering ============
