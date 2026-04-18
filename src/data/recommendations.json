@@ -446,6 +446,19 @@
             "type": "official_docs"
           }
         ]
+      },
+      {
+        "title": "Capacity Planning Review Based on Request Volume Trends",
+        "body": "Growing login counts and request volumes are scale indicators that warrant proactive capacity planning, even when current performance signals remain green. Review trends over 30- and 90-day windows: are logins growing faster than infrastructure capacity? Is request volume trending toward governor limits? Are concurrent user counts approaching org licensing or technical thresholds? Capacity planning is not a remediation for acute problems — it is an exercise in staying ahead of them.",
+        "tags": ["Capacity", "Planning", "Scale"],
+        "relevant_signals": ["successful_logins", "total_request_volume", "concurrent_requests"],
+        "root_cause_types": ["compute", "data"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
