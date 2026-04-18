@@ -2039,6 +2039,100 @@ h3 {
   }
 }
 
+/* ============ OCR Diagnostic Panel ============ */
+
+.ocr-diagnostic {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ocr-diag__title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--yellow);
+  cursor: pointer;
+  list-style: none;
+  padding: 0.3rem 0;
+}
+
+.ocr-diag__title::-webkit-details-marker {
+  display: none;
+}
+
+.ocr-diag__content h4 {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 1rem 0 0.5rem;
+}
+
+.ocr-diag__overlay {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.ocr-diag__dims {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.ocr-diag__table-wrap {
+  overflow-x: auto;
+}
+
+.ocr-diag__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.ocr-diag__table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ocr-diag__table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+
+.ocr-diag__mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.ocr-diag__tile-img {
+  height: 40px;
+  width: auto;
+  background: #000;
+  image-rendering: pixelated;
+  border-radius: 3px;
+}
+
+.ocr-diag__mismatch {
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.ocr-diag__mismatch td {
+  color: var(--yellow);
+}
+
 /* ============ Reduced Motion ============ */
 
 @media (prefers-reduced-motion: reduce) {

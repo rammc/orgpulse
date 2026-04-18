@@ -971,6 +971,98 @@ function displayResults() {
   }
 
   document.getElementById('matrix-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Render OCR diagnostic panel if debug mode is active
+  renderOcrDiagnosticPanel();
+}
+
+// ============ OCR Diagnostic Panel ============
+
+const SAMPLE_EXPECTED = {
+  successful_logins: 23,
+  failed_logins: 0,
+  concurrent_apex_errors: 0,
+  concurrent_ui_errors: 0,
+  row_lock_errors: 2,
+  total_callout_errors: 0,
+};
+
+function renderOcrDiagnosticPanel() {
+  const existing = document.getElementById('ocr-diagnostic-panel');
+  if (existing) existing.remove();
+
+  if (typeof localStorage === 'undefined' || localStorage.getItem('orgpulse-ocr-debug') !== 'true')
+    return;
+
+  const debugData = window.__orgpulseOcrDebug;
+  const sourceCanvas = window.__orgpulseOcrSourceCanvas;
+  if (!debugData || debugData.length === 0) return;
+
+  const section = document.createElement('section');
+  section.id = 'ocr-diagnostic-panel';
+  section.className = 'ocr-diagnostic';
+
+  // Build overlay canvas
+  let overlayHtml = '';
+  if (sourceCanvas) {
+    const overlayCanvas = document.createElement('canvas');
+    overlayCanvas.width = sourceCanvas.width;
+    overlayCanvas.height = sourceCanvas.height;
+    const octx = overlayCanvas.getContext('2d');
+    octx.drawImage(sourceCanvas, 0, 0);
+    octx.strokeStyle = 'magenta';
+    octx.lineWidth = 4;
+    octx.font = `${Math.round(sourceCanvas.height * 0.008)}px sans-serif`;
+    octx.fillStyle = 'magenta';
+    for (const entry of debugData) {
+      const b = entry.box;
+      octx.strokeRect(b.x, b.y, b.w, b.h);
+      octx.fillText(entry.counterName, b.x + 4, b.y - 6);
+    }
+    overlayHtml = `<img src="${overlayCanvas.toDataURL('image/png')}" class="ocr-diag__overlay" alt="Source with extraction boxes"/>
+      <div class="ocr-diag__dims">Canvas: ${sourceCanvas.width} x ${sourceCanvas.height}px</div>`;
+  }
+
+  // Build per-counter table
+  const rows = debugData
+    .map((entry) => {
+      const expected = SAMPLE_EXPECTED[entry.counterName];
+      const match = entry.parsedValue === expected;
+      const rowClass = match ? '' : ' class="ocr-diag__mismatch"';
+      return `<tr${rowClass}>
+      <td>${entry.counterName}</td>
+      <td class="ocr-diag__mono">${entry.box.x}, ${entry.box.y}, ${entry.box.w}, ${entry.box.h}</td>
+      <td><img src="${entry.preprocessedImage}" class="ocr-diag__tile-img" alt="${entry.counterName} preprocessed"/></td>
+      <td class="ocr-diag__mono">${JSON.stringify(entry.rawText)}</td>
+      <td><strong>${entry.parsedValue ?? 'null'}</strong></td>
+      <td>${entry.confidence?.toFixed(1)}%</td>
+      <td>${expected}</td>
+    </tr>`;
+    })
+    .join('');
+
+  section.innerHTML = `
+    <details open>
+      <summary class="ocr-diag__title">OCR Diagnostic Output</summary>
+      <div class="ocr-diag__content">
+        <h4>Source image with extraction boxes</h4>
+        ${overlayHtml}
+        <h4>Per-counter extraction results</h4>
+        <div class="ocr-diag__table-wrap">
+          <table class="ocr-diag__table">
+            <thead><tr>
+              <th>Counter</th><th>Box (x,y,w,h)</th><th>Preprocessed</th>
+              <th>Raw text</th><th>Parsed</th><th>Confidence</th><th>Expected</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  `;
+
+  const main = document.querySelector('.main');
+  main.appendChild(section);
 }
 
 // ============ Start ============

@@ -88,6 +88,12 @@ async function detectLayout(canvas, worker) {
  * Extract a single counter tile, preprocess it, and run OCR.
  * Returns { value: number|null, confidence: number, raw: string }
  */
+function isDebugMode() {
+  return (
+    typeof localStorage !== 'undefined' && localStorage.getItem('orgpulse-ocr-debug') === 'true'
+  );
+}
+
 async function ocrCounterTile(canvas, tileIndex, worker) {
   const box = getCounterTileBox(tileIndex, canvas.width, canvas.height);
 
@@ -110,14 +116,36 @@ async function ocrCounterTile(canvas, tileIndex, worker) {
   }
   ctx.putImageData(id, 0, 0);
 
-  const { data } = await worker.recognize(tile);
-  const raw = data.text.trim();
+  const result = await worker.recognize(tile);
+  const raw = result.data.text.trim();
   const match = raw.match(/\d[\d,]*/);
   const value = match ? parseInt(match[0].replace(/,/g, ''), 10) : null;
 
   console.log(`[OrgPulse OCR] Tile ${tileIndex} (${COUNTER_KEYS[tileIndex]}): "${raw}" → ${value}`);
 
-  return { value, confidence: data.confidence, raw };
+  // Stash debug data
+  if (isDebugMode()) {
+    window.__orgpulseOcrDebug = window.__orgpulseOcrDebug || [];
+    window.__orgpulseOcrDebug.push({
+      counterName: COUNTER_KEYS[tileIndex],
+      box,
+      preprocessedImage: tile.toDataURL('image/png'),
+      rawText: raw,
+      confidence: result.data.confidence,
+      parsedValue: value,
+      words: result.data.words,
+    });
+
+    console.group(`[OCR Debug] ${COUNTER_KEYS[tileIndex]}`);
+    console.log('Box:', box);
+    console.log('Raw text:', JSON.stringify(raw));
+    console.log('Confidence:', result.data.confidence);
+    console.log('Parsed value:', value);
+    console.log('Words:', result.data.words);
+    console.groupEnd();
+  }
+
+  return { value, confidence: result.data.confidence, raw };
 }
 
 // ============ Debug overlay ============
@@ -174,6 +202,12 @@ export async function analyzeWithOCR(imageFile, onProgress = () => {}) {
   const counters = {};
   let totalConfidence = 0;
   const rawParts = [];
+
+  // Clear previous debug data
+  if (isDebugMode()) {
+    window.__orgpulseOcrDebug = [];
+    window.__orgpulseOcrSourceCanvas = canvas;
+  }
 
   if (layout === 'org-performance') {
     drawDebugOverlay(canvas);
