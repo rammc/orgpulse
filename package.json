@@ -31,7 +31,7 @@
     "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "eslint": "^9.14.0",
     "prettier": "^3.4.2",
     "vite": "^6.3.2",
