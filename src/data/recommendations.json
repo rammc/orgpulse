@@ -151,6 +151,24 @@
             "type": "official_docs"
           }
         ]
+      },
+      {
+        "title": "Move Synchronous Logic to Queueable Apex",
+        "body": "When synchronous Apex transactions hit governor limits — particularly CPU time, heap size, or SOQL query count — moving work to Queueable Apex resets the governor context. Identify long-running trigger logic, complex Flow orchestrations, and post-save cascades that could execute asynchronously without degrading user experience. Queueable chains also decouple user-facing transactions from integration and notification side effects, preventing a slow callout from blocking a save.",
+        "tags": ["Apex", "Async", "Governor Limits"],
+        "relevant_signals": [
+          "concurrent_apex_errors",
+          "total_cpu_time",
+          "apex_execution_time",
+          "slow_transactions"
+        ],
+        "root_cause_types": ["compute", "concurrency"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
