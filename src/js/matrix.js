@@ -534,6 +534,11 @@ function bindUpload() {
       layoutWarningEl.innerHTML = '';
       layoutWarningEl.classList.remove('layout-warning--visible');
     }
+    const ocrFallbackEl = document.getElementById('ocr-fallback');
+    if (ocrFallbackEl) {
+      ocrFallbackEl.innerHTML = '';
+      ocrFallbackEl.classList.remove('ocr-uncertain--visible');
+    }
     applySeverityToMatrix({
       cells: recommendationsData.map((r) => ({
         id: r.id,
@@ -773,10 +778,37 @@ function displayResults() {
     // Check if we have reconciled counters from deep analysis
     const reconciled = deepResult?.reconciledCounters;
 
+    // OCR uncertainty fallback banner
+    const ocrFallbackEl = document.getElementById('ocr-fallback');
+    if (ocrFallbackEl) {
+      if (basicResult.ocrCertain === false) {
+        ocrFallbackEl.innerHTML = `
+          <div class="ocr-uncertain__title">OCR couldn't reliably read this screenshot</div>
+          <div class="ocr-uncertain__body">The basic OCR works best on the standard Org Performance layout. Your screenshot may use a different layout version or unusual rendering.</div>
+          <div class="ocr-uncertain__action">
+            <button class="btn btn--accent" id="switch-to-deep-btn">Switch to Deep Analysis (~$0.02)</button>
+            <span class="ocr-uncertain__hint">Uses Claude Vision for layout-agnostic interpretation.</span>
+          </div>
+        `;
+        ocrFallbackEl.classList.add('ocr-uncertain--visible');
+        document.getElementById('switch-to-deep-btn')?.addEventListener('click', () => {
+          analysisMode = 'deep';
+          document.getElementById('mode-deep')?.classList.add('mode-toggle__option--active');
+          document.getElementById('mode-basic')?.classList.remove('mode-toggle__option--active');
+          runAnalysis();
+        });
+      } else {
+        ocrFallbackEl.innerHTML = '';
+        ocrFallbackEl.classList.remove('ocr-uncertain--visible');
+      }
+    }
+
     counterContainer.innerHTML = Object.entries(basicResult.counters)
       .map(([key, value]) => {
         let severity = 'ok';
-        if (key !== 'successful_logins' && value > 0) {
+        if (value === null) {
+          severity = 'unknown';
+        } else if (key !== 'successful_logins' && value > 0) {
           severity = value > 10 ? 'critical' : 'warning';
         }
 

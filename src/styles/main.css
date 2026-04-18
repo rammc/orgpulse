@@ -656,6 +656,53 @@ h3 {
   color: var(--green);
 }
 
+.counter-card--unknown .counter-card__value {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ============ OCR Uncertainty Banner ============ */
+
+.ocr-uncertain {
+  display: none;
+  margin-bottom: 0.75rem;
+}
+
+.ocr-uncertain--visible {
+  display: block;
+  padding: 0.85rem 1rem;
+  background: var(--yellow-bg);
+  border: 1px solid var(--yellow-border);
+  border-left: 3px solid var(--yellow);
+  border-radius: var(--radius-sm);
+}
+
+.ocr-uncertain__title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--yellow);
+  margin-bottom: 0.35rem;
+}
+
+.ocr-uncertain__body {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+
+.ocr-uncertain__action {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ocr-uncertain__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 .detection-summary__signals {
   display: flex;
   flex-wrap: wrap;
