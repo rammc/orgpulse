@@ -144,8 +144,8 @@ function extractNumbersRegion(canvas, layout) {
   const d = imageData.data;
   for (let i = 0; i < d.length; i += 4) {
     const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
-    // Aggressive threshold: <140 = black, else white
-    const val = gray < 140 ? 0 : 255;
+    // Tight threshold: <80 = black (text), else white (background)
+    const val = gray < 80 ? 0 : 255;
     d[i] = d[i + 1] = d[i + 2] = val;
   }
   ctx.putImageData(imageData, 0, 0);
