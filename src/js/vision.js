@@ -165,11 +165,30 @@ Return ONLY valid JSON matching the provided schema.`,
 
   onProgress(0.95, 'Parsing AI findings...');
 
-  // Extract JSON from the response (handle potential markdown wrapping)
+  // Extract JSON from the response (handle markdown wrapping and edge cases)
   let jsonStr = textContent.text.trim();
-  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  // Try multiple backtick patterns: ```json\n...\n```, ```\n...\n```, etc.
+  const jsonMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
   if (jsonMatch) {
     jsonStr = jsonMatch[1].trim();
+  } else if (jsonStr.startsWith('```')) {
+    // Fallback: strip leading/trailing backtick lines manually
+    const lines = jsonStr.split('\n');
+    const startIdx = lines[0].startsWith('```') ? 1 : 0;
+    const endIdx = lines[lines.length - 1].trim() === '```' ? lines.length - 1 : lines.length;
+    jsonStr = lines.slice(startIdx, endIdx).join('\n').trim();
+  }
+  // Final safety: if still starts with non-JSON char, find first { or [
+  if (jsonStr.length > 0 && jsonStr[0] !== '{' && jsonStr[0] !== '[') {
+    const braceIdx = jsonStr.indexOf('{');
+    const bracketIdx = jsonStr.indexOf('[');
+    const firstJson = Math.min(
+      braceIdx === -1 ? Infinity : braceIdx,
+      bracketIdx === -1 ? Infinity : bracketIdx
+    );
+    if (firstJson !== Infinity) {
+      jsonStr = jsonStr.substring(firstJson);
+    }
   }
 
   const result = JSON.parse(jsonStr);
