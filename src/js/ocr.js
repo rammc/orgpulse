@@ -139,14 +139,13 @@ function extractNumbersRegion(canvas, layout) {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, regionCanvas.width, regionCanvas.height);
 
-  // High-contrast grayscale: make digits black on white
+  // Grayscale + contrast boost (same as counter region but stronger)
   const imageData = ctx.getImageData(0, 0, regionCanvas.width, regionCanvas.height);
   const d = imageData.data;
   for (let i = 0; i < d.length; i += 4) {
     const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
-    // Tight threshold: <80 = black (text), else white (background)
-    const val = gray < 80 ? 0 : 255;
-    d[i] = d[i + 1] = d[i + 2] = val;
+    const boosted = gray < 128 ? Math.max(0, gray - 50) : Math.min(255, gray + 50);
+    d[i] = d[i + 1] = d[i + 2] = boosted;
   }
   ctx.putImageData(imageData, 0, 0);
 
@@ -378,19 +377,11 @@ export async function analyzeWithOCR(imageFile, onProgress = () => {}) {
   const { data: labelData } = await worker.recognize(counterRegion);
   console.log('[OrgPulse OCR] Pass 1 (labels):', JSON.stringify(labelData.text));
 
-  // Pass 2: Numbers-only OCR on the bottom half of the counter region
-  // (where the large counter values are rendered)
+  // Pass 2: Numbers-only OCR on the numbers row
   onProgress(0.6, 'Reading counter values...');
   const numbersRegion = extractNumbersRegion(canvas, layout);
 
-  // Create a fresh worker with digits-only whitelist for number extraction
-  const numWorker = await createWorker('eng', 1, {});
-  await numWorker.setParameters({
-    tessedit_char_whitelist: '0123456789 ',
-    tessedit_pageseg_mode: '7',
-  });
-  const { data: numData } = await numWorker.recognize(numbersRegion);
-  await numWorker.terminate();
+  const { data: numData } = await worker.recognize(numbersRegion);
 
   console.log('[OrgPulse OCR] Pass 2 (numbers):', JSON.stringify(numData.text));
 
