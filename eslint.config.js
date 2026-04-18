@@ -19,6 +19,7 @@ export default [
         console: 'readonly',
         CustomEvent: 'readonly',
         DOMParser: 'readonly',
+        File: 'readonly',
       },
     },
     rules: {

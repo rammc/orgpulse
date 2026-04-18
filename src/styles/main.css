@@ -364,6 +364,64 @@ h3 {
   cursor: pointer;
 }
 
+/* ============ Sample Offer ============ */
+
+.sample-offer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.sample-offer--hidden {
+  display: none;
+}
+
+.sample-offer__text {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.sample-offer__btn {
+  font-family: 'Manrope', sans-serif;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.sample-offer__btn:hover {
+  background: var(--accent-glow);
+  border-color: var(--accent-border);
+}
+
+.sample-offer__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sample-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+}
+
 /* ============ Preview Bar ============ */
 
 .preview-bar {

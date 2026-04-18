@@ -49,6 +49,7 @@ let analysisMode = 'basic';
 let currentScoreResult = null;
 let accumulatedResults = [];
 let lastFileKey = null;
+let isSampleLoaded = false;
 
 // Matrix layout: rows (top=high impact) x cols (left=low effort)
 const MATRIX_LAYOUT = [
@@ -477,9 +478,37 @@ function bindUpload() {
 
   analyzeBtn.addEventListener('click', runAnalysis);
 
+  // Sample screenshot loader
+  const sampleBtn = document.getElementById('load-sample-btn');
+  if (sampleBtn) {
+    sampleBtn.addEventListener('click', async () => {
+      sampleBtn.disabled = true;
+      sampleBtn.textContent = 'Loading sample...';
+      try {
+        const base = import.meta.env.BASE_URL || '/';
+        const response = await fetch(`${base}samples/scale-center-sample.png`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        const file = new File([blob], 'scale-center-sample.png', { type: 'image/png' });
+        isSampleLoaded = true;
+        handleFile(file);
+        document.getElementById('sample-offer')?.classList.add('sample-offer--hidden');
+        // Auto-trigger Basic Mode analysis
+        runAnalysis();
+      } catch {
+        sampleBtn.textContent = 'Error loading sample';
+        setTimeout(() => {
+          sampleBtn.textContent = 'Try with a sample screenshot';
+          sampleBtn.disabled = false;
+        }, 3000);
+      }
+    });
+  }
+
   clearBtn.addEventListener('click', () => {
     selectedFile = null;
     lastFileKey = null;
+    isSampleLoaded = false;
     accumulatedResults = [];
     currentScoreResult = null;
     fileInput.value = '';
@@ -514,6 +543,8 @@ function bindUpload() {
       })),
       healthStatus: 'none',
     });
+    // Restore sample offer
+    document.getElementById('sample-offer')?.classList.remove('sample-offer--hidden');
   });
 }
 
@@ -535,7 +566,8 @@ function handleFile(file) {
 
   thumb.src = URL.createObjectURL(file);
   name.textContent = file.name;
-  size.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+  const sampleBadge = isSampleLoaded ? ' <span class="sample-badge">SAMPLE</span>' : '';
+  size.innerHTML = `${(file.size / 1024).toFixed(1)} KB${sampleBadge}`;
   previewBar.classList.add('preview-bar--visible');
 }
 
