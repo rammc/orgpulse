@@ -21,6 +21,10 @@ export default [
         DOMParser: 'readonly',
         File: 'readonly',
         Blob: 'readonly',
+        sessionStorage: 'readonly',
+        btoa: 'readonly',
+        AbortController: 'readonly',
+        clearTimeout: 'readonly',
       },
     },
     rules: {
