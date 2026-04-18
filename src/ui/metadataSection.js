@@ -4,9 +4,11 @@ import {
   detectProjectLayout,
   runMetadataAnalysis,
 } from '../metadata/index.js';
+import { downloadMarkdownReport } from './markdownExporter.js';
 
 let currentSignals = [];
 let currentDirHandle = null;
+let lastAnalysisResult = null;
 
 // ============ Section & Pattern Metadata ============
 
@@ -145,6 +147,12 @@ function renderSection() {
     <div class="metadata-section__header">
       <h2 class="metadata-section__title">Metadata Analysis</h2>
       <span class="metadata-section__badge">Local Mode</span>
+      <div class="metadata-section__toolbar">
+        <button class="export-btn" id="export-findings-btn" disabled aria-label="Export findings as Markdown">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+      </div>
     </div>
     <p class="metadata-section__subtitle">Pinpoint specific Apex classes, triggers, and Flows causing the detected performance issues.</p>
     <div class="metadata-section__signals" id="metadata-signals">
@@ -168,6 +176,9 @@ function renderSection() {
 
   document.getElementById('metadata-pick-btn').addEventListener('click', handlePick);
   document.getElementById('metadata-analyze-btn').addEventListener('click', handleAnalyze);
+  document.getElementById('export-findings-btn').addEventListener('click', () => {
+    if (lastAnalysisResult) downloadMarkdownReport(lastAnalysisResult, currentSignals);
+  });
 
   const footerP = document.querySelector('.footer p');
   if (footerP) {
@@ -218,6 +229,8 @@ async function handleAnalyze() {
       currentDirHandle
     );
     progress.textContent = `Done. Scanned ${result.fileCount} files, analyzed ${result.analyzedCount}, found ${result.findings.length} findings.`;
+    lastAnalysisResult = result;
+    document.getElementById('export-findings-btn').disabled = result.findings.length === 0;
     renderGroupedFindings(result.findings, container);
   } catch (err) {
     progress.textContent = `Error: ${err.message}`;
@@ -393,7 +406,16 @@ function renderGroupedFindings(findings, container) {
       </details>`;
   }
 
+  if (findings.length > 0) {
+    html += `<div class="findings-footer-actions"><a href="#" class="export-link" id="export-findings-footer">Export all ${findings.length} findings as Markdown</a></div>`;
+  }
+
   container.innerHTML = html;
+
+  document.getElementById('export-findings-footer')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (lastAnalysisResult) downloadMarkdownReport(lastAnalysisResult, currentSignals);
+  });
 }
 
 // ============ Finding Cards ============
