@@ -66,7 +66,7 @@
         "title": "Consolidate Sharing Rules and OWD",
         "body": "Audit existing Sharing Rules for redundant or overlapping entries. Consolidate using criteria-based sharing with hierarchies where possible. Review Organization-Wide Defaults: if most records are public anyway, a more open OWD drastically reduces share row recalculation time and improves DML performance on shared objects.",
         "tags": ["Security", "Sharing", "Data Model"],
-        "relevant_signals": ["concurrent_apex_errors", "row_lock_errors", "concurrent_dml"],
+        "relevant_signals": ["row_lock_errors", "total_cpu_time", "slow_transactions"],
         "root_cause_types": ["concurrency", "data"],
         "references": [
           {
@@ -201,13 +201,7 @@
         "title": "Data Archival Strategy for Large Objects",
         "body": "For objects exceeding 10M records where queries slow down and DB CPU time degrades: implement a structured archival strategy. Move historical data (closed cases >2 years, inactive accounts, completed transactions) to Big Objects for compliance-retained but rarely queried data, or to External Objects via Salesforce Connect for on-demand access to archived data. Use Bulk API 2.0 for the initial archival migration. Reducing active record volume directly improves SOQL performance, shrinks Skinny Table footprints, and lowers DB CPU pressure on the operational org.",
         "tags": ["Data Model", "Big Objects", "Large Data Volumes", "Performance"],
-        "relevant_signals": [
-          "db_cpu_time",
-          "slow_soql",
-          "slow_transactions",
-          "total_cpu_time",
-          "successful_logins"
-        ],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "total_cpu_time"],
         "root_cause_types": ["data"],
         "references": [
           {
@@ -224,7 +218,7 @@
         "title": "Zero Copy Federation to Offload Large Data Volumes",
         "body": "When queries against very large tables (>50M records) cause sustained DB CPU spikes and Skinny Tables or indexes no longer provide sufficient relief: federate the data to Snowflake, BigQuery, Databricks, or Redshift via Zero Copy. Historical analytics, reporting, and ML workloads can run against the federated source without duplicating data or consuming Salesforce storage. Use File Federation for petabyte-scale historical data, Accelerated Query (caching) for frequent access patterns. Keep source systems in the same cloud region as the federation endpoint. This is a performance remediation, not a marketing initiative \u2014 pursue when traditional LDV patterns have been exhausted.",
         "tags": ["Zero Copy", "Large Data Volumes", "Snowflake", "BigQuery"],
-        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "successful_logins"],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions"],
         "root_cause_types": ["data"],
         "references": [
           {
@@ -584,12 +578,7 @@
         "title": "Audit API Usage by Connected App",
         "body": "When Scale Center shows elevated API request volume or periodic callout error patterns, identify which Connected Apps and integration users consume the most API calls. Use the API Usage Last 7 Days report and Login History filtered by API requests. Deactivate unused Connected Apps, consolidate duplicate integrations where possible, and review OAuth scopes — overly broad scopes amplify security risk without performance benefit. For high-volume integrations consuming API limits, evaluate migration to Pub/Sub API for event-driven consumption.",
         "tags": ["API", "Connected Apps", "Integration", "Governance"],
-        "relevant_signals": [
-          "total_callout_errors",
-          "callout_time",
-          "total_request_volume",
-          "successful_logins"
-        ],
+        "relevant_signals": ["total_callout_errors", "callout_time", "total_request_volume"],
         "root_cause_types": ["integration", "configuration"],
         "references": [
           {
