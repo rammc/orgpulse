@@ -78,7 +78,7 @@ export async function analyzeWithVision(imageFile, onProgress = () => {}) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 2000,
+      max_tokens: 4096,
       system: `You are an expert Salesforce Performance Engineer analyzing a Scale Center Org Performance screenshot.
 
 CRITICAL LAYOUT KNOWLEDGE:
