@@ -70,7 +70,7 @@ async function detectLayout(canvas, worker) {
  */
 function extractCounterRegion(canvas, layout) {
   const regions = {
-    'org-performance': { top: 0.07, bottom: 0.14 },
+    'org-performance': { top: 0.085, bottom: 0.13 },
     'scale-center-legacy': { top: 0.05, bottom: 0.15 },
     unknown: { top: 0.05, bottom: 0.2 },
   };
@@ -181,47 +181,55 @@ function parseCounters(text) {
     /callout\s*error/i.test(fullText);
 
   if (hasLabels) {
-    // Find all standalone numbers (digits possibly separated by spaces on a "numbers line")
-    // Look for lines that are mostly numbers
-    const lines = text
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const numberLines = lines.filter((line) => {
-      const stripped = line.replace(/[\s,.|]/g, '');
-      return stripped.length > 0 && /^\d+$/.test(stripped);
-    });
+    // The Org Performance layout has labels on one line and numbers on the next.
+    // Find the position of the LAST known label keyword, then extract numbers
+    // that appear AFTER it in the text.
+    const labelAnchors = [
+      /successful\s*logins?/i,
+      /failed\s*logins?/i,
+      /concurrent\s*apex/i,
+      /concurrent\s*u/i,
+      /row\s*lock/i,
+      /callout\s*errors?/i,
+    ];
 
-    // Also try: find all digit sequences across the whole text
-    const allNumbers = [];
-    const numRegex = /\b(\d{1,6})\b/g;
-    let m;
-    while ((m = numRegex.exec(text)) !== null) {
-      allNumbers.push(parseInt(m[1], 10));
+    let lastLabelEnd = 0;
+    for (const anchor of labelAnchors) {
+      const match = anchor.exec(fullText);
+      if (match) {
+        const end = match.index + match[0].length;
+        if (end > lastLabelEnd) lastLabelEnd = end;
+      }
     }
 
-    // If we found exactly 6 numbers (or the first 6 from a numbers-heavy region),
-    // map them positionally to the counter keys
-    if (allNumbers.length >= 6) {
-      // Take the last 6 numbers (labels come first, numbers come after)
-      const last6 = allNumbers.slice(-6);
+    // Extract numbers that appear AFTER the last label
+    const textAfterLabels = text.substring(lastLabelEnd);
+    const numbersAfterLabels = [];
+    const numRegex = /\b(\d{1,6})\b/g;
+    let m;
+    while ((m = numRegex.exec(textAfterLabels)) !== null) {
+      // Filter out year-like numbers (2020-2030) and time-like (12:00 → "12", "00")
+      const num = parseInt(m[1], 10);
+      if (num >= 2020 && num <= 2030) continue; // likely year
+      numbersAfterLabels.push(num);
+    }
+
+    if (numbersAfterLabels.length >= 6) {
+      const first6 = numbersAfterLabels.slice(0, 6);
       for (let i = 0; i < 6; i++) {
-        counters[COUNTER_KEYS[i]] = last6[i];
+        counters[COUNTER_KEYS[i]] = first6[i];
       }
-      console.log('[OrgPulse OCR] Strategy 2 (positional): extracted', last6);
+      console.log('[OrgPulse OCR] Strategy 2 (positional, after labels): extracted', first6);
       return counters;
     }
 
-    // Fallback: try to match numbers from number-heavy lines
-    if (numberLines.length > 0) {
-      const nums = numberLines.join(' ').match(/\d+/g)?.map(Number) || [];
-      if (nums.length >= 6) {
-        for (let i = 0; i < 6; i++) {
-          counters[COUNTER_KEYS[i]] = nums[i];
-        }
-        console.log('[OrgPulse OCR] Strategy 2b (number lines): extracted', nums.slice(0, 6));
-        return counters;
+    // If fewer than 6 but some found, still use what we have
+    if (numbersAfterLabels.length > 0) {
+      for (let i = 0; i < Math.min(numbersAfterLabels.length, 6); i++) {
+        counters[COUNTER_KEYS[i]] = numbersAfterLabels[i];
       }
+      console.log('[OrgPulse OCR] Strategy 2 (partial): extracted', numbersAfterLabels);
+      return counters;
     }
   }
 
