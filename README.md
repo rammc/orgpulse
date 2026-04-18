@@ -146,6 +146,10 @@ We welcome contributions — especially from Salesforce architects and developer
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and coding standards.
 
+### Debugging OCR issues
+
+If you're troubleshooting OCR counter extraction, see [`docs/OCR_DEBUG.md`](docs/OCR_DEBUG.md) for the diagnostic workflow.
+
 ## AI Transparency
 
 This project was built with significant assistance from AI tools — specifically [Claude by Anthropic](https://www.anthropic.com/claude) (Claude Opus and Claude Code). AI was used for:
