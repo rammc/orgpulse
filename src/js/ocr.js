@@ -116,14 +116,65 @@ function extractCounterRegion(canvas, layout) {
 }
 
 /**
+ * Extract ONLY the numbers row from the counter region.
+ * The numbers are in the bottom ~50% of the counter tile area.
+ */
+function extractNumbersRegion(canvas, layout) {
+  const regions = {
+    'org-performance': { top: 0.1, bottom: 0.13 },
+    'scale-center-legacy': { top: 0.1, bottom: 0.15 },
+    unknown: { top: 0.1, bottom: 0.18 },
+  };
+
+  const region = regions[layout] || regions.unknown;
+  const y = Math.round(canvas.height * region.top);
+  const h = Math.round(canvas.height * (region.bottom - region.top));
+
+  // Extract at 3x scale for better OCR on large digits
+  const scale = 3;
+  const regionCanvas = document.createElement('canvas');
+  regionCanvas.width = canvas.width * scale;
+  regionCanvas.height = h * scale;
+  const ctx = regionCanvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, regionCanvas.width, regionCanvas.height);
+
+  // High-contrast grayscale: make digits black on white
+  const imageData = ctx.getImageData(0, 0, regionCanvas.width, regionCanvas.height);
+  const d = imageData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+    // Aggressive threshold: <140 = black, else white
+    const val = gray < 140 ? 0 : 255;
+    d[i] = d[i + 1] = d[i + 2] = val;
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  if (
+    typeof localStorage !== 'undefined' &&
+    localStorage.getItem('orgpulse-ocr-debug') === 'true'
+  ) {
+    const dbgCtx = canvas.getContext('2d');
+    dbgCtx.strokeStyle = 'cyan';
+    dbgCtx.lineWidth = 3;
+    dbgCtx.strokeRect(0, y, canvas.width, h);
+    dbgCtx.fillStyle = 'cyan';
+    dbgCtx.font = '14px sans-serif';
+    dbgCtx.fillText('Numbers region', 10, y + 16);
+  }
+
+  return regionCanvas;
+}
+
+/**
  * Parse counter values from OCR text.
  *
  * Strategy 1: Label-based regex — looks for "Successful Logins ... 23"
- * Strategy 2: Positional — if labels are detected but numbers are on
- *   separate lines, extract all standalone numbers and map by position
- *   (left to right matches the 6 counters in order).
+ * Strategy 2: Two-pass — labels from full OCR, numbers from digits-only OCR
+ * Strategy 3: Positional fallback — numbers after last label
  */
-function parseCounters(text) {
+function parseCounters(labelText, numberText) {
+  const text = numberText ? labelText + '\n' + numberText : labelText;
   const COUNTER_KEYS = [
     'successful_logins',
     'failed_logins',
@@ -233,6 +284,35 @@ function parseCounters(text) {
     }
   }
 
+  // Strategy 3: Direct number extraction from digits-only OCR pass
+  if (numberText) {
+    const directNumbers = numberText
+      .trim()
+      .split(/[\s\n]+/)
+      .map((s) => s.replace(/[^\d]/g, ''))
+      .filter((s) => s.length > 0)
+      .map(Number);
+
+    if (directNumbers.length >= 6) {
+      for (let i = 0; i < 6; i++) {
+        counters[COUNTER_KEYS[i]] = directNumbers[i];
+      }
+      console.log(
+        '[OrgPulse OCR] Strategy 3 (direct digits): extracted',
+        directNumbers.slice(0, 6)
+      );
+      return counters;
+    }
+
+    if (directNumbers.length > 0) {
+      for (let i = 0; i < Math.min(directNumbers.length, 6); i++) {
+        counters[COUNTER_KEYS[i]] = directNumbers[i];
+      }
+      console.log('[OrgPulse OCR] Strategy 3 (partial digits): extracted', directNumbers);
+      return counters;
+    }
+  }
+
   console.log(
     '[OrgPulse OCR] No strategy matched. Labels found:',
     hasLabels,
@@ -290,16 +370,35 @@ export async function analyzeWithOCR(imageFile, onProgress = () => {}) {
   const layout = await detectLayout(canvas, worker);
 
   onProgress(0.25, 'Extracting counters...');
+
+  // Two-pass OCR: first get labels, then get numbers separately
   const counterRegion = extractCounterRegion(canvas, layout);
 
-  const {
-    data: { text, confidence },
-  } = await worker.recognize(counterRegion);
+  // Pass 1: Full OCR to get labels
+  const { data: labelData } = await worker.recognize(counterRegion);
+  console.log('[OrgPulse OCR] Pass 1 (labels):', JSON.stringify(labelData.text));
+
+  // Pass 2: Numbers-only OCR on the bottom half of the counter region
+  // (where the large counter values are rendered)
+  onProgress(0.6, 'Reading counter values...');
+  const numbersRegion = extractNumbersRegion(canvas, layout);
+
+  // Create a fresh worker with digits-only whitelist for number extraction
+  const numWorker = await createWorker('eng', 1, {});
+  await numWorker.setParameters({
+    tessedit_char_whitelist: '0123456789 ',
+    tessedit_pageseg_mode: '7',
+  });
+  const { data: numData } = await numWorker.recognize(numbersRegion);
+  await numWorker.terminate();
+
+  console.log('[OrgPulse OCR] Pass 2 (numbers):', JSON.stringify(numData.text));
+
   await worker.terminate();
 
   onProgress(0.9, 'Parsing results...');
-  const counters = parseCounters(text);
-  const normalizedConfidence = Math.round(confidence) / 100;
+  const counters = parseCounters(labelData.text, numData.text);
+  const normalizedConfidence = Math.round(Math.max(labelData.confidence, numData.confidence)) / 100;
 
   // Replace null values with 0 for confirmed layouts (null = truly unknown)
   const finalCounters = {};
@@ -314,7 +413,7 @@ export async function analyzeWithOCR(imageFile, onProgress = () => {}) {
   return {
     mode: 'basic',
     counters: finalCounters,
-    raw_text: text,
+    raw_text: labelData.text + '\n' + (numData?.text || ''),
     confidence: normalizedConfidence,
     layout,
     ocrCertain: certainty.certain,
