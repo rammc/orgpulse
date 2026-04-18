@@ -116,45 +116,121 @@ function extractCounterRegion(canvas, layout) {
 }
 
 /**
- * Parse counter values from OCR text using label-based regex matching.
+ * Parse counter values from OCR text.
+ *
+ * Strategy 1: Label-based regex — looks for "Successful Logins ... 23"
+ * Strategy 2: Positional — if labels are detected but numbers are on
+ *   separate lines, extract all standalone numbers and map by position
+ *   (left to right matches the 6 counters in order).
  */
 function parseCounters(text) {
-  const counters = {
-    successful_logins: null,
-    failed_logins: null,
-    concurrent_apex_errors: null,
-    concurrent_ui_errors: null,
-    row_lock_errors: null,
-    total_callout_errors: null,
-  };
+  const COUNTER_KEYS = [
+    'successful_logins',
+    'failed_logins',
+    'concurrent_apex_errors',
+    'concurrent_ui_errors',
+    'row_lock_errors',
+    'total_callout_errors',
+  ];
 
-  const patterns = [
+  const counters = {};
+  for (const k of COUNTER_KEYS) counters[k] = null;
+
+  // Log raw text for debugging
+  console.log('[OrgPulse OCR] Raw text:', JSON.stringify(text));
+
+  const fullText = text.toLowerCase();
+
+  // Strategy 1: Label-based regex (works when label and number are on same line)
+  const labelPatterns = [
     { key: 'successful_logins', regex: /successful\s*logins?\s*[^\d]*(\d[\d,]*)/i },
     { key: 'failed_logins', regex: /failed\s*logins?\s*[^\d]*(\d[\d,]*)/i },
-    {
-      key: 'concurrent_apex_errors',
-      regex: /concurrent\s*apex\s*errors?\s*[^\d]*(\d[\d,]*)/i,
-    },
+    { key: 'concurrent_apex_errors', regex: /concurrent\s*apex\s*errors?\s*[^\d]*(\d[\d,]*)/i },
     {
       key: 'concurrent_ui_errors',
       regex: /concurrent\s*(?:ui|u\.?i\.?)\s*errors?\s*[^\d]*(\d[\d,]*)/i,
     },
     { key: 'row_lock_errors', regex: /row\s*lock\s*errors?\s*[^\d]*(\d[\d,]*)/i },
-    {
-      key: 'total_callout_errors',
-      regex: /(?:total\s*)?callout\s*errors?\s*[^\d]*(\d[\d,]*)/i,
-    },
+    { key: 'total_callout_errors', regex: /(?:total\s*)?callout\s*errors?\s*[^\d]*(\d[\d,]*)/i },
   ];
 
-  const fullText = text.toLowerCase();
-
-  for (const { key, regex } of patterns) {
+  let labelMatchCount = 0;
+  for (const { key, regex } of labelPatterns) {
     const match = fullText.match(regex);
     if (match) {
       counters[key] = parseInt(match[1].replace(/,/g, ''), 10);
+      labelMatchCount++;
     }
   }
 
+  if (labelMatchCount >= 3) {
+    console.log('[OrgPulse OCR] Strategy 1 (label-based): matched', labelMatchCount, 'counters');
+    return counters;
+  }
+
+  // Strategy 2: Positional — detect known labels, then find standalone numbers
+  // In Org Performance layout, labels and numbers are on separate lines.
+  // The OCR text typically looks like:
+  //   "Successful Logins ® Failed Logins ® ... \n 23 0 0 0 2 0"
+  // or each label+number on its own block.
+
+  const hasLabels =
+    /successful\s*login/i.test(fullText) ||
+    /failed\s*login/i.test(fullText) ||
+    /row\s*lock/i.test(fullText) ||
+    /callout\s*error/i.test(fullText);
+
+  if (hasLabels) {
+    // Find all standalone numbers (digits possibly separated by spaces on a "numbers line")
+    // Look for lines that are mostly numbers
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const numberLines = lines.filter((line) => {
+      const stripped = line.replace(/[\s,.|]/g, '');
+      return stripped.length > 0 && /^\d+$/.test(stripped);
+    });
+
+    // Also try: find all digit sequences across the whole text
+    const allNumbers = [];
+    const numRegex = /\b(\d{1,6})\b/g;
+    let m;
+    while ((m = numRegex.exec(text)) !== null) {
+      allNumbers.push(parseInt(m[1], 10));
+    }
+
+    // If we found exactly 6 numbers (or the first 6 from a numbers-heavy region),
+    // map them positionally to the counter keys
+    if (allNumbers.length >= 6) {
+      // Take the last 6 numbers (labels come first, numbers come after)
+      const last6 = allNumbers.slice(-6);
+      for (let i = 0; i < 6; i++) {
+        counters[COUNTER_KEYS[i]] = last6[i];
+      }
+      console.log('[OrgPulse OCR] Strategy 2 (positional): extracted', last6);
+      return counters;
+    }
+
+    // Fallback: try to match numbers from number-heavy lines
+    if (numberLines.length > 0) {
+      const nums = numberLines.join(' ').match(/\d+/g)?.map(Number) || [];
+      if (nums.length >= 6) {
+        for (let i = 0; i < 6; i++) {
+          counters[COUNTER_KEYS[i]] = nums[i];
+        }
+        console.log('[OrgPulse OCR] Strategy 2b (number lines): extracted', nums.slice(0, 6));
+        return counters;
+      }
+    }
+  }
+
+  console.log(
+    '[OrgPulse OCR] No strategy matched. Labels found:',
+    hasLabels,
+    'Text length:',
+    text.length
+  );
   return counters;
 }
 
