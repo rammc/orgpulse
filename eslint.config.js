@@ -20,6 +20,7 @@ export default [
         CustomEvent: 'readonly',
         DOMParser: 'readonly',
         File: 'readonly',
+        Blob: 'readonly',
       },
     },
     rules: {

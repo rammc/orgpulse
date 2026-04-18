@@ -116,6 +116,12 @@ export async function runMetadataAnalysis(signals, onProgress, dirHandle = null)
     findings: scoreFindings(allFindings),
     signals,
     analyzersUsed: analyzerIds,
+    projectName:
+      dirHandle?.name
+        ?.replace(/[^a-zA-Z0-9\-_.]/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 60) || 'unknown-project',
+    analyzedAt: new Date().toISOString(),
     diagnostics: {
       extensionStats,
       analyzedFiles,
