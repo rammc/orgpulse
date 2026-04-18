@@ -50,30 +50,12 @@
         ]
       },
       {
-        "title": "Enable Skinny Tables for Large Objects",
-        "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow \u2014 maximum 100 columns \u2014 and remember they're rebuilt asynchronously after schema changes.",
-        "tags": ["SOQL", "Large Data Volumes", "Support Case"],
-        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "total_cpu_time"],
-        "root_cause_types": ["data"],
-        "references": [
-          {
-            "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_skinny_tables.htm",
-            "type": "official_docs"
-          }
-        ]
-      },
-      {
-        "title": "Consolidate Sharing Rules and OWD",
-        "body": "Audit existing Sharing Rules for redundant or overlapping entries. Consolidate using criteria-based sharing with hierarchies where possible. Review Organization-Wide Defaults: if most records are public anyway, a more open OWD drastically reduces share row recalculation time and improves DML performance on shared objects.",
-        "tags": ["Security", "Sharing", "Data Model"],
-        "relevant_signals": ["row_lock_errors", "total_cpu_time", "slow_transactions"],
-        "root_cause_types": ["concurrency", "data"],
-        "references": [
-          {
-            "url": "https://architect.salesforce.com/fundamentals/platform-sharing-architecture",
-            "type": "official_docs"
-          }
-        ]
+        "title": "Optimize Debug Log Levels in Production",
+        "body": "Ensure no Debug Logs with Fine or Finest log levels are active in production. Elevated log levels can cause up to 10% CPU overhead per transaction and contribute to Apex CPU Time limit exceptions under load. Audit active Trace Flags and expire unused ones. For ongoing observability, prefer Event Monitoring (via Event Log Files) or Platform Events with custom observability endpoints over ad-hoc Debug Logs.",
+        "tags": ["Operations", "Performance", "Quick Fix"],
+        "relevant_signals": ["total_cpu_time", "apex_execution_time"],
+        "root_cause_types": ["compute", "configuration"],
+        "references": []
       }
     ],
     "contributors": ["@cramm"],
@@ -261,6 +243,19 @@
             "type": "official_docs"
           }
         ]
+      },
+      {
+        "title": "Consolidate Sharing Rules and OWD",
+        "body": "Audit existing Sharing Rules for redundant or overlapping entries. Consolidate using criteria-based sharing with hierarchies where possible. Review Organization-Wide Defaults: if most records are public anyway, a more open OWD drastically reduces share row recalculation time and improves DML performance on shared objects.",
+        "tags": ["Security", "Sharing", "Data Model"],
+        "relevant_signals": ["row_lock_errors", "total_cpu_time", "slow_transactions"],
+        "root_cause_types": ["concurrency", "data"],
+        "references": [
+          {
+            "url": "https://architect.salesforce.com/fundamentals/platform-sharing-architecture",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
@@ -289,28 +284,6 @@
       { "keywords": ["callout", "api usage", "connected app", "imperative apex"] }
     ],
     "recommendations": [
-      {
-        "title": "Migrate Imperative Apex Calls to Wire Adapters",
-        "body": "In LWCs, replace imperative Apex calls with @wire decorators on cacheable Apex methods. Wire adapters enable automatic caching via Lightning Data Service, reactive updates on record changes, and eliminate duplicate server round-trips. For complex queries across multiple objects, prefer the GraphQL Wire Adapter (lightning/graphql) over custom Apex \u2014 it provides precise field selection, eliminates over-fetching, and reduces field dependencies in the cache.",
-        "tags": ["LWC", "Performance", "Wire Adapters"],
-        "relevant_signals": [
-          "ui_request_time",
-          "average_request_time",
-          "total_cpu_time",
-          "concurrent_ui_errors"
-        ],
-        "root_cause_types": ["compute"],
-        "references": [
-          {
-            "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html",
-            "type": "official_docs"
-          },
-          {
-            "url": "https://developer.salesforce.com/docs/platform/graphql/guide",
-            "type": "official_docs"
-          }
-        ]
-      },
       {
         "title": "Improve Callout Error Handling with Named Credentials",
         "body": "Replace hardcoded endpoints and credentials with Named Credentials (prefer External Credentials + Named Credentials, the modern split introduced in Winter '23). Implement retry logic with exponential backoff for transient failures. Log failed callouts to a Custom Object or Platform Event for monitoring, and create alerts for sustained error patterns. For high-volume integrations, migrate from synchronous callouts to Platform Events with asynchronous consumers.",
@@ -416,6 +389,19 @@
             "type": "official_docs"
           }
         ]
+      },
+      {
+        "title": "Enable Skinny Tables for Large Objects",
+        "body": "For objects with >1M records that are frequently queried in reports and list views: file a Salesforce Support case to enable Skinny Tables. They eliminate joins between standard and custom fields and can improve read performance by 10x. Keep Skinny Tables narrow \u2014 maximum 100 columns \u2014 and remember they're rebuilt asynchronously after schema changes.",
+        "tags": ["SOQL", "Large Data Volumes", "Support Case"],
+        "relevant_signals": ["db_cpu_time", "slow_soql", "slow_transactions", "total_cpu_time"],
+        "root_cause_types": ["data"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_skinny_tables.htm",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
@@ -496,6 +482,28 @@
             "type": "official_docs"
           }
         ]
+      },
+      {
+        "title": "Migrate Imperative Apex Calls to Wire Adapters",
+        "body": "In LWCs, replace imperative Apex calls with @wire decorators on cacheable Apex methods. Wire adapters enable automatic caching via Lightning Data Service, reactive updates on record changes, and eliminate duplicate server round-trips. For complex queries across multiple objects, prefer the GraphQL Wire Adapter (lightning/graphql) over custom Apex \u2014 it provides precise field selection, eliminates over-fetching, and reduces field dependencies in the cache.",
+        "tags": ["LWC", "Performance", "Wire Adapters"],
+        "relevant_signals": [
+          "ui_request_time",
+          "average_request_time",
+          "total_cpu_time",
+          "concurrent_ui_errors"
+        ],
+        "root_cause_types": ["compute"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html",
+            "type": "official_docs"
+          },
+          {
+            "url": "https://developer.salesforce.com/docs/platform/graphql/guide",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
@@ -519,14 +527,6 @@
         "tags": ["Cleanup", "Data Model", "Governance"],
         "relevant_signals": ["*"],
         "root_cause_types": ["data", "configuration"],
-        "references": []
-      },
-      {
-        "title": "Optimize Debug Log Levels in Production",
-        "body": "Ensure no Debug Logs with Fine or Finest log levels are active in production. Elevated log levels can cause up to 10% CPU overhead per transaction and contribute to Apex CPU Time limit exceptions under load. Audit active Trace Flags and expire unused ones. For ongoing observability, prefer Event Monitoring (via Event Log Files) or Platform Events with custom observability endpoints over ad-hoc Debug Logs.",
-        "tags": ["Operations", "Performance", "Quick Fix"],
-        "relevant_signals": ["total_cpu_time", "apex_execution_time"],
-        "root_cause_types": ["compute", "configuration"],
         "references": []
       }
     ],
