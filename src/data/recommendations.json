@@ -327,6 +327,19 @@
             "type": "official_docs"
           }
         ]
+      },
+      {
+        "title": "Concurrent Request Queue Management",
+        "body": "Orgs hitting concurrent request limits typically run too many async processes in parallel or chain Queueables without flow control. Review Queueable Apex chains for opportunities to stagger execution rather than firing in parallel. For batch jobs, coordinate scheduled times so high-concurrency windows do not overlap. Platform Event subscribers running heavy logic per event can be refactored to buffer events and process in controlled batches.",
+        "tags": ["Apex", "Async", "Concurrency"],
+        "relevant_signals": ["concurrent_requests", "concurrent_apex_errors", "slow_transactions"],
+        "root_cause_types": ["concurrency", "compute"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm",
+            "type": "official_docs"
+          }
+        ]
       }
     ],
     "contributors": ["@cramm"],
@@ -417,6 +430,19 @@
         "references": [
           {
             "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_skinny_tables.htm",
+            "type": "official_docs"
+          }
+        ]
+      },
+      {
+        "title": "API Rate Limiting and Throttling Strategy",
+        "body": "Orgs with high request volume or concurrent request pressure benefit from a deliberate rate limiting strategy. Evaluate which integrations consume the most API calls, implement exponential backoff in clients where possible, and consider circuit breaker patterns for dependent external services. For outbound callouts, review whether batching or caching could reduce call frequency. For inbound pressure, assess whether Platform Events can replace polling patterns from external systems.",
+        "tags": ["Integration", "API", "Governance"],
+        "relevant_signals": ["total_request_volume", "concurrent_requests", "total_callout_errors"],
+        "root_cause_types": ["integration", "configuration"],
+        "references": [
+          {
+            "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_api.htm",
             "type": "official_docs"
           }
         ]
