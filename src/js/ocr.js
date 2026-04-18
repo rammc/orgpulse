@@ -46,24 +46,37 @@ const COUNTER_KEYS = [
  * Counter labels at ~8.5-9.5%, counter numbers at ~10.5-12.5%
  */
 const ORG_PERF_LAYOUT = {
-  // Vertical band containing ONLY the large counter numbers
-  numberRowTop: 0.105,
-  numberRowBottom: 0.125,
-  // Horizontal extent of the 6 tiles (left edge to right edge of last tile)
-  tileLeft: 0.01,
-  tileRight: 0.68,
+  // Vertical band: ONLY the large counter numbers, excluding labels above.
+  // Numbers sit at y ≈ 11.3%-12.8% of image height (calibrated on 2952x4648 sample).
+  numberRowTop: 0.113,
+  numberRowBottom: 0.128,
+  // Tile positions measured from actual number start positions.
+  // Tile 0 number starts at x/w=2.2%, tiles are ~10.6% apart.
+  // We place the left edge slightly before each number for tolerance.
+  tileLeft: 0.018,
+  tileRight: 0.654,
   tileCount: 6,
+  // Within each tile, take the left 30% where the number sits.
+  // Numbers are 1-4 digits (0, 2, 23, 1247), left-aligned.
+  numberInTileStart: 0.0,
+  numberInTileEnd: 0.3,
 };
 
 function getCounterTileBox(tileIndex, imgWidth, imgHeight) {
   const rowW = (ORG_PERF_LAYOUT.tileRight - ORG_PERF_LAYOUT.tileLeft) * imgWidth;
   const tileW = rowW / ORG_PERF_LAYOUT.tileCount;
-  return {
-    x: Math.round(ORG_PERF_LAYOUT.tileLeft * imgWidth + tileIndex * tileW),
-    y: Math.round(ORG_PERF_LAYOUT.numberRowTop * imgHeight),
-    w: Math.round(tileW),
-    h: Math.round((ORG_PERF_LAYOUT.numberRowBottom - ORG_PERF_LAYOUT.numberRowTop) * imgHeight),
-  };
+  const tileLeftAbs = ORG_PERF_LAYOUT.tileLeft * imgWidth + tileIndex * tileW;
+
+  const x = Math.round(tileLeftAbs + ORG_PERF_LAYOUT.numberInTileStart * tileW);
+  const w = Math.round(
+    (ORG_PERF_LAYOUT.numberInTileEnd - ORG_PERF_LAYOUT.numberInTileStart) * tileW
+  );
+  const y = Math.round(ORG_PERF_LAYOUT.numberRowTop * imgHeight);
+  const h = Math.round(
+    (ORG_PERF_LAYOUT.numberRowBottom - ORG_PERF_LAYOUT.numberRowTop) * imgHeight
+  );
+
+  return { x, y, w, h };
 }
 
 // ============ Layout detection ============
