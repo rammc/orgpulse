@@ -384,6 +384,11 @@ function renderGroupedFindings(findings, container) {
     </details>`
             : '';
 
+        const singleFindingHint =
+          pg.findings.length === 1
+            ? '<div class="pattern-single-hint">1 finding for this pattern — this appears to be an isolated case rather than a systemic issue.</div>'
+            : '';
+
         return `
         <details class="pattern-group" id="pattern-${pg.pattern.toLowerCase().replace(/_/g, '-')}"${isOpen}>
           <summary class="pattern-group__header">
@@ -406,7 +411,7 @@ function renderGroupedFindings(findings, container) {
           </details>`
               : ''
           }
-          <div class="pattern-findings">${visibleCardsHtml}${overflowHtml}</div>
+          ${singleFindingHint}<div class="pattern-findings">${visibleCardsHtml}${overflowHtml}</div>
         </details>`;
       })
       .join('');

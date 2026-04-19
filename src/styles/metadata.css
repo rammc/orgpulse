@@ -657,6 +657,17 @@
   font-family: 'Sora', sans-serif;
 }
 
+.pattern-single-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.4rem 0.7rem;
+  margin: 0.35rem 0.7rem 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  border-left: 2px solid var(--text-muted);
+}
+
 .scan-stats {
   display: inline-flex;
   align-items: center;
