@@ -241,18 +241,7 @@ async function handleAnalyze() {
     const statsText = `Done. Scanned ${result.fileCount} files, analyzed ${result.analyzedCount}, found ${result.findings.length} findings.`;
     const tipText =
       'Not every scanned file is analyzed. Files are filtered based on relevance to the detected Scale Center signals. Wrong metadata type, test classes, managed packages, or files outside the analyzer scope are excluded.';
-    progress.innerHTML = '';
-    const statsSpan = document.createElement('span');
-    statsSpan.className = 'scan-stats';
-    statsSpan.textContent = statsText + ' ';
-    const infoSpan = document.createElement('span');
-    infoSpan.className = 'scan-stats-info';
-    infoSpan.title = tipText;
-    infoSpan.setAttribute('aria-label', tipText);
-    infoSpan.innerHTML =
-      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-    statsSpan.appendChild(infoSpan);
-    progress.appendChild(statsSpan);
+    progress.innerHTML = `${statsText} <span class="scan-stats-info" aria-label="${tipText}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="scan-stats-tooltip">${tipText}</span></span>`;
     lastAnalysisResult = result;
     findingsById = new Map();
     result.findings.forEach((f) => {
