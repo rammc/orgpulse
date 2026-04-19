@@ -332,6 +332,18 @@
   border-color: var(--border);
 }
 
+.finding-card.severity-critical {
+  border-left: 3px solid var(--red);
+}
+
+.finding-card.severity-warning {
+  border-left: 3px solid var(--yellow);
+}
+
+.finding-card.severity-info {
+  border-left: 3px solid #60a5fa;
+}
+
 .finding-card__file {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;

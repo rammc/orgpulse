@@ -491,7 +491,7 @@ function renderFindingCard(f) {
       : '';
 
   return `
-    <div class="finding-card">
+    <div class="finding-card severity-${f.severity}">
       <div class="finding-card__header">
         <span class="finding-card__severity finding-card__severity--${f.severity}">${f.severity}</span>
         <span class="finding-card__confidence">${f.confidence}</span>

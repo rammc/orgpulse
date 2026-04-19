@@ -7,6 +7,7 @@ A realistic Scale Center Org Performance screenshot used for the onboarding flow
 **Source:** Development org owned by the OrgPulse maintainer. Contains no customer data, no identifying org metadata, and no sensitive information — only aggregated performance metrics visible on any Scale Center dashboard.
 
 **Characteristics:**
+
 - 23 successful logins, 0 failed logins
 - 0 concurrent Apex errors, 0 concurrent UI errors
 - 2 row lock errors
