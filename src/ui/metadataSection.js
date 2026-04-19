@@ -238,7 +238,8 @@ async function handleAnalyze() {
       },
       currentDirHandle
     );
-    progress.textContent = `Done. Scanned ${result.fileCount} files, analyzed ${result.analyzedCount}, found ${result.findings.length} findings.`;
+    const tooltipText = `Of ${result.fileCount} scanned files, ${result.analyzedCount} were eligible for analysis based on the detected Scale Center signals. The rest were excluded by file type, scope, or signal relevance.`;
+    progress.innerHTML = `<span class="scan-stats">Done. Scanned ${result.fileCount} files, analyzed ${result.analyzedCount}, found ${result.findings.length} findings. <span class="scan-stats-info" title="${tooltipText}" aria-label="${tooltipText}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>`;
     lastAnalysisResult = result;
     findingsById = new Map();
     result.findings.forEach((f) => {

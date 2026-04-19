@@ -657,6 +657,24 @@
   font-family: 'Sora', sans-serif;
 }
 
+.scan-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.scan-stats-info {
+  display: inline-flex;
+  cursor: help;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.scan-stats-info:hover {
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .signal-breakdown__item {
     flex-direction: column;
