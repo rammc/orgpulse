@@ -51,7 +51,7 @@
       },
       {
         "title": "Optimize Debug Log Levels in Production",
-        "body": "Ensure no Debug Logs with Fine or Finest log levels are active in production. Elevated log levels can cause up to 10% CPU overhead per transaction and contribute to Apex CPU Time limit exceptions under load. Audit active Trace Flags and expire unused ones. For ongoing observability, prefer Event Monitoring (via Event Log Files) or Platform Events with custom observability endpoints over ad-hoc Debug Logs.",
+        "body": "Check Setup \u2192 Debug Logs for active Trace Flags with FINE or FINER log levels \u2014 especially those left active by developers or past Salesforce Support cases. Forgotten trace flags can add up to 10% CPU overhead per transaction and contribute silently to total_cpu_time in production. Review Debug Log file volume as a proxy: if logs are accumulating at more than 50MB per day in an org without active debugging work, elevated log levels are likely contributing. Remove expired trace flags, lower any long-running ones to INFO or WARN, and prefer Event Monitoring or Platform Events for sustained observability instead of ad-hoc Debug Logs.",
         "tags": ["Operations", "Performance", "Quick Fix"],
         "relevant_signals": ["total_cpu_time", "apex_execution_time"],
         "root_cause_types": ["compute", "configuration"],
@@ -143,7 +143,7 @@
         "title": "Row Lock Analysis and Mitigation",
         "body": "Row Locks occur when parallel DML operations target the same records \u2014 especially common during data loads against parent-child hierarchies. Use Scale Center's Row Lock investigation to identify affected objects and entry points. Mitigation: sort batch input by parent Id to prevent lock escalation, offload to Queueable Apex with ordered processing, and avoid recursive triggers that amplify contention. Consider Change Data Capture for downstream systems instead of synchronous DML chains.",
         "tags": ["Apex", "Concurrency", "Data Model"],
-        "relevant_signals": ["row_lock_errors", "concurrent_dml", "concurrent_apex_errors"],
+        "relevant_signals": ["row_lock_errors", "concurrent_dml"],
         "root_cause_types": ["concurrency"],
         "references": [
           {
@@ -231,12 +231,7 @@
         "title": "Adopt Event-Driven Architecture with CDC and Platform Events",
         "body": "For orgs with high inter-system coupling and synchronous callout chains: introduce Change Data Capture (CDC) for near-real-time data replication and Platform Events for custom business events. This decouples systems, reduces synchronous callouts, improves scalability under load, and makes the architecture resilient to downstream failures. Use Pub/Sub API for efficient subscription from external consumers instead of CometD.",
         "tags": ["Architecture", "Platform Events", "CDC", "Integration"],
-        "relevant_signals": [
-          "total_callout_errors",
-          "callout_time",
-          "concurrent_requests",
-          "successful_logins"
-        ],
+        "relevant_signals": ["total_callout_errors", "callout_time", "concurrent_requests"],
         "root_cause_types": ["integration", "concurrency"],
         "references": [
           {
