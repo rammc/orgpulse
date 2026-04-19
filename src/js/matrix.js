@@ -609,7 +609,6 @@ function reconcileCounters(ocrCounters, visionCounters, ocrConfidence) {
     'total_callout_errors',
   ];
   const reconciled = {};
-  const confPercent = Math.round((ocrConfidence || 0) * 100);
 
   for (const key of ALL_COUNTERS) {
     const ocrVal = ocrCounters?.[key];
@@ -628,9 +627,6 @@ function reconcileCounters(ocrCounters, visionCounters, ocrConfidence) {
           ocrValue: ocrVal,
           visionValue: visionVal,
         };
-        console.info(
-          `[OrgPulse] Counter reconciliation: ${key} — OCR: ${ocrVal} (conf: ${confPercent}%), Vision: ${visionVal} → OCR preferred (above ${OCR_CONFIDENCE_THRESHOLD * 100}% threshold)`
-        );
       } else {
         reconciled[key] = {
           value: visionVal,
@@ -639,9 +635,6 @@ function reconcileCounters(ocrCounters, visionCounters, ocrConfidence) {
           ocrValue: ocrVal,
           visionValue: visionVal,
         };
-        console.info(
-          `[OrgPulse] Counter reconciliation: ${key} — OCR: ${ocrVal} (conf: ${confPercent}%), Vision: ${visionVal} → Vision preferred (OCR below ${OCR_CONFIDENCE_THRESHOLD * 100}% threshold)`
-        );
       }
     } else if (hasOcr) {
       reconciled[key] = { value: ocrVal, source: 'ocr', confidence: 'medium' };

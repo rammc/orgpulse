@@ -134,10 +134,11 @@ async function ocrCounterTile(canvas, tileIndex, worker) {
   const match = raw.match(/\d[\d,]*/);
   const value = match ? parseInt(match[0].replace(/,/g, ''), 10) : null;
 
-  console.log(`[OrgPulse OCR] Tile ${tileIndex} (${COUNTER_KEYS[tileIndex]}): "${raw}" → ${value}`);
-
   // Stash debug data
   if (isDebugMode()) {
+    console.log(
+      `[OrgPulse OCR] Tile ${tileIndex} (${COUNTER_KEYS[tileIndex]}): "${raw}" → ${value}`
+    );
     window.__orgpulseOcrDebug = window.__orgpulseOcrDebug || [];
     window.__orgpulseOcrDebug.push({
       counterName: COUNTER_KEYS[tileIndex],
@@ -210,7 +211,9 @@ export async function analyzeWithOCR(imageFile, onProgress = () => {}) {
 
   onProgress(0.15, 'Detecting layout...');
   const layout = await detectLayout(canvas, worker);
-  console.log('[OrgPulse OCR] Layout detected:', layout);
+  if (isDebugMode()) {
+    console.log('[OrgPulse OCR] Layout detected:', layout);
+  }
 
   const counters = {};
   let totalConfidence = 0;
