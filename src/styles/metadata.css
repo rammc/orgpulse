@@ -503,6 +503,12 @@
 
 .finding-ai-fix {
   margin-top: 0.5rem;
+  display: none;
+}
+
+.finding-card__snippet-wrap[open] + .finding-ai-fix,
+.finding-ai-fix:has(.ai-fix-result:not(.ai-fix-result--hidden)) {
+  display: block;
 }
 
 .ai-fix-btn {
