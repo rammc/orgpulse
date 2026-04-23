@@ -1,10 +1,10 @@
 import { categorizeSignal } from './signalTypes.js';
 
 const SIGNAL_TO_ANALYZERS = {
-  CPU: ['apexCpuAnalyzer', 'flowAnalyzer'],
-  ROW_LOCKS: ['apexRowLockAnalyzer'],
+  CPU: ['apexCpuAnalyzer', 'flowAnalyzer', 'metadataAnalyzer'],
+  ROW_LOCKS: ['apexRowLockAnalyzer', 'metadataAnalyzer'],
   QUERY: ['apexCpuAnalyzer', 'flowAnalyzer'],
-  CONCURRENCY: ['apexCpuAnalyzer', 'apexRowLockAnalyzer', 'flowAnalyzer'],
+  CONCURRENCY: ['apexCpuAnalyzer', 'apexRowLockAnalyzer', 'flowAnalyzer', 'metadataAnalyzer'],
   CALLOUTS: ['flowAnalyzer'],
 };
 
