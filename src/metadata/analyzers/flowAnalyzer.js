@@ -1,19 +1,7 @@
 import { parseFlowMetadata, findNodesInsideLoop } from '../flowParser.js';
 import { log } from '../util/logger.js';
-
-const HIGH_CONTENTION_OBJECTS = new Set([
-  'Account',
-  'Contact',
-  'Opportunity',
-  'Lead',
-  'Case',
-  'Task',
-  'Event',
-  'Order',
-  'OrderItem',
-  'OpportunityLineItem',
-  'User',
-]);
+import { HIGH_CONTENTION_OBJECTS } from '../util/highContentionObjects.js';
+import * as fieldRegistry from '../registry/fieldRegistry.js';
 
 const RECORD_OP_TYPES = new Set([
   'recordLookups',
@@ -39,9 +27,11 @@ const APEX_CALLOUT_PATTERNS = [
 
 // Cross-file registry for detecting multiple flows on same object/trigger
 let flowRegistry = [];
+let lookupRegistry = [];
 
 export function resetRegistry() {
   flowRegistry = [];
+  lookupRegistry = [];
 }
 
 export function getRegistry() {
@@ -115,9 +105,158 @@ function detectRecordOpsInLoop(parsed) {
         ],
       });
     }
+
+    const subflows = nodesInLoop.filter((n) => n.type === 'subflows');
+    for (const sf of subflows) {
+      findings.push({
+        analyzer: 'flowAnalyzer',
+        pattern: 'FLOW_SUBFLOW_IN_LOOP',
+        name: 'Subflow invoked inside Flow loop',
+        severity: 'critical',
+        confidence: 'high',
+        description: `Flow "${label}": subflow "${sf.name}" is invoked inside loop "${loopNode.name}". Any DML or SOQL inside the subflow multiplies with loop iterations, hitting governor limits on bulk transactions.`,
+        flowLabel: label,
+        triggerObject: triggerInfo?.object || null,
+        loopName: loopNode.name,
+        operationName: sf.name,
+        operationType: 'subflows',
+        relatedSignals: [
+          'total_cpu_time',
+          'apex_execution_time',
+          'slow_transactions',
+          'concurrent_apex_errors',
+        ],
+      });
+    }
   }
 
   return findings;
+}
+
+/**
+ * Detect Pattern 5: recordLookups that re-query the trigger object by $Record.Id.
+ * Wastes 1 SOQL per flow invocation — under bulk, hits the 100-query limit.
+ */
+function detectRedundantTriggerQuery(parsed) {
+  const { recordLookups, triggerInfo, label } = parsed;
+  if (!triggerInfo?.object || !recordLookups?.length) return [];
+
+  const findings = [];
+  for (const lookup of recordLookups) {
+    const objectEl = directChild(lookup.element, 'object');
+    if (!objectEl || objectEl.textContent.trim() !== triggerInfo.object) continue;
+
+    const filters = lookup.element.querySelectorAll(':scope > filters');
+    if (filters.length !== 1) continue;
+    const filter = filters[0];
+    const field = directChild(filter, 'field');
+    const operator = directChild(filter, 'operator');
+    if (!field || !operator) continue;
+    if (field.textContent.trim() !== 'Id') continue;
+    if (operator.textContent.trim() !== 'EqualTo') continue;
+    const valueEl = directChild(filter, 'value');
+    if (!valueEl) continue;
+    const elementRef = directChild(valueEl, 'elementReference');
+    if (!elementRef) continue;
+    const ref = elementRef.textContent.trim();
+    if (ref !== '$Record.Id' && ref !== '$Record__Prior.Id') continue;
+
+    findings.push({
+      analyzer: 'flowAnalyzer',
+      pattern: 'FLOW_REDUNDANT_TRIGGER_QUERY',
+      name: 'Redundant Get Records on trigger object',
+      severity: 'warning',
+      confidence: 'high',
+      description: `Flow "${label}": Get Records "${lookup.name}" re-queries the trigger object ${triggerInfo.object} by $Record.Id. Use $Record.<Field> directly — the trigger already provides the record in memory. Saves 1 SOQL per invocation.`,
+      flowLabel: label,
+      triggerObject: triggerInfo.object,
+      operationName: lookup.name,
+      relatedSignals: ['total_cpu_time', 'apex_execution_time'],
+    });
+  }
+  return findings;
+}
+
+/**
+ * Detect Pattern 6: recordLookups without any filters.
+ * Full-table scan risk; on >50K records hits SOQL row limits and times out.
+ */
+function detectUnfilteredGetRecords(parsed) {
+  const { recordLookups, label, triggerInfo } = parsed;
+  if (!recordLookups?.length) return [];
+
+  const findings = [];
+  for (const lookup of recordLookups) {
+    const filters = lookup.element.querySelectorAll(':scope > filters');
+    const filterFormula = directChild(lookup.element, 'filterFormula');
+    const filterLogic = directChild(lookup.element, 'filterLogic');
+    if (filters.length > 0 || filterFormula || filterLogic) continue;
+
+    const objectEl = directChild(lookup.element, 'object');
+    const object = objectEl ? objectEl.textContent.trim() : null;
+
+    findings.push({
+      analyzer: 'flowAnalyzer',
+      pattern: 'FLOW_GET_RECORDS_NO_FILTER',
+      name: 'Get Records without filter',
+      severity: 'warning',
+      confidence: 'high',
+      description: `Flow "${label}": Get Records "${lookup.name}"${
+        object ? ` on ${object}` : ''
+      } has no filter — full-table scan risk. On tables with >50K records this will hit SOQL row limits or time out.`,
+      flowLabel: label,
+      triggerObject: triggerInfo?.object || null,
+      operationName: lookup.name,
+      queriedObject: object,
+      relatedSignals: ['total_cpu_time', 'apex_execution_time', 'slow_transactions'],
+    });
+  }
+  return findings;
+}
+
+/**
+ * Detect Pattern 7: storeOutputAutomatically=true on recordLookups.
+ * Retrieves ALL fields (including LongTextArea) → heap + CPU serialization cost,
+ * plus potential FLS exposure.
+ */
+function detectStoreOutputAutomatically(parsed) {
+  const { recordLookups, label, triggerInfo } = parsed;
+  if (!recordLookups?.length) return [];
+
+  const findings = [];
+  for (const lookup of recordLookups) {
+    const storeAuto = directChild(lookup.element, 'storeOutputAutomatically');
+    if (!storeAuto || storeAuto.textContent.trim() !== 'true') continue;
+
+    const objectEl = directChild(lookup.element, 'object');
+    const object = objectEl ? objectEl.textContent.trim() : null;
+
+    findings.push({
+      analyzer: 'flowAnalyzer',
+      pattern: 'FLOW_STORE_OUTPUT_AUTOMATICALLY',
+      name: 'Get Records retrieves all fields',
+      severity: 'info',
+      confidence: 'high',
+      description: `Flow "${label}": Get Records "${lookup.name}"${
+        object ? ` on ${object}` : ''
+      } uses storeOutputAutomatically=true — retrieves every field including LongTextArea. Increases heap usage and serialization CPU, especially in bulk triggers. Specify explicit queriedFields instead.`,
+      flowLabel: label,
+      triggerObject: triggerInfo?.object || null,
+      operationName: lookup.name,
+      queriedObject: object,
+      relatedSignals: ['total_cpu_time', 'apex_execution_time'],
+    });
+  }
+  return findings;
+}
+
+function directChild(parent, tagName) {
+  if (!parent) return null;
+  const children = parent.children;
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].tagName === tagName) return children[i];
+  }
+  return null;
 }
 
 /**
@@ -231,14 +370,48 @@ export function analyze(filePath, fileContent) {
     });
   }
 
+  registerLookupsForCrossRef(parsed, filePath);
+
   const findings = [
     ...detectNoEntryFilter(parsed),
     ...detectRecordOpsInLoop(parsed),
     ...detectSynchronousCallouts(parsed, filePath),
+    ...detectRedundantTriggerQuery(parsed),
+    ...detectUnfilteredGetRecords(parsed),
+    ...detectStoreOutputAutomatically(parsed),
   ];
 
   log.info('flowAnalyzer', `${filePath}: ${findings.length} findings`);
   return findings;
+}
+
+function registerLookupsForCrossRef(parsed, filePath) {
+  if (!parsed.recordLookups?.length) return;
+  for (const lookup of parsed.recordLookups) {
+    const objectEl = directChild(lookup.element, 'object');
+    const object = objectEl ? objectEl.textContent.trim() : null;
+    if (!object) continue;
+
+    const storeAutoEl = directChild(lookup.element, 'storeOutputAutomatically');
+    const storeOutputAutomatically = storeAutoEl?.textContent.trim() === 'true';
+
+    const filters = Array.from(lookup.element.querySelectorAll(':scope > filters'));
+    const filterFields = [];
+    for (const f of filters) {
+      const field = directChild(f, 'field');
+      if (field) filterFields.push(field.textContent.trim());
+    }
+
+    lookupRegistry.push({
+      filePath,
+      flowLabel: parsed.label,
+      triggerObject: parsed.triggerInfo?.object || null,
+      lookupName: lookup.name,
+      targetObject: object,
+      storeOutputAutomatically,
+      filterFields,
+    });
+  }
 }
 
 /**
@@ -286,10 +459,70 @@ export function finalizePass() {
     });
   }
 
+  findings.push(...detectUnindexedFilters());
+  findings.push(...detectHeapRiskLookups());
+
   log.info(
     'flowAnalyzer.finalize',
-    `${findings.length} cross-file findings from ${flowRegistry.length} registered flows`
+    `${findings.length} cross-file findings from ${flowRegistry.length} flows, ${lookupRegistry.length} lookups`
   );
+  return findings;
+}
+
+function detectUnindexedFilters() {
+  const findings = [];
+  for (const lookup of lookupRegistry) {
+    for (const field of lookup.filterFields) {
+      if (!fieldRegistry.isCustomField(field)) continue;
+      const entry = fieldRegistry.getField(lookup.targetObject, field);
+      if (!entry) continue;
+      if (entry.indexed) continue;
+
+      findings.push({
+        analyzer: 'flowAnalyzer',
+        pattern: 'FLOW_UNINDEXED_FILTER',
+        name: 'Flow filters on non-indexed custom field',
+        severity: 'warning',
+        confidence: 'medium',
+        description: `Flow "${lookup.flowLabel}": Get Records "${lookup.lookupName}" filters ${lookup.targetObject} by ${field}. The field is neither external ID nor unique nor a relationship — on tables with >100K rows this causes a full-table scan and query timeouts. Either add a custom index via Salesforce Support or filter on an indexed field first.`,
+        file: lookup.filePath,
+        flowLabel: lookup.flowLabel,
+        triggerObject: lookup.triggerObject,
+        operationName: lookup.lookupName,
+        queriedObject: lookup.targetObject,
+        unindexedField: field,
+        relatedSignals: ['total_cpu_time', 'slow_transactions', 'average_request_time'],
+      });
+    }
+  }
+  return findings;
+}
+
+function detectHeapRiskLookups() {
+  const findings = [];
+  for (const lookup of lookupRegistry) {
+    if (!lookup.storeOutputAutomatically) continue;
+    const heapField = fieldRegistry.hasHeapHeavyField(lookup.targetObject);
+    if (!heapField) continue;
+
+    findings.push({
+      analyzer: 'flowAnalyzer',
+      pattern: 'FLOW_STORE_OUTPUT_HEAP_RISK',
+      name: 'Get Records auto-loads heap-heavy field',
+      severity: 'warning',
+      confidence: 'high',
+      description: `Flow "${lookup.flowLabel}": Get Records "${lookup.lookupName}" on ${lookup.targetObject} uses storeOutputAutomatically=true, and ${lookup.targetObject} has a ${heapField.type} field (${heapField.field}${heapField.length ? `, up to ${heapField.length} chars` : ''}). Under bulk triggers (200 records × up to 128KB each) this blows past the 6MB sync heap limit. Switch to explicit queriedFields and exclude large text fields.`,
+      file: lookup.filePath,
+      flowLabel: lookup.flowLabel,
+      triggerObject: lookup.triggerObject,
+      operationName: lookup.lookupName,
+      queriedObject: lookup.targetObject,
+      heapField: heapField.field,
+      heapFieldType: heapField.type,
+      heapFieldLength: heapField.length,
+      relatedSignals: ['total_cpu_time', 'apex_execution_time'],
+    });
+  }
   return findings;
 }
 
