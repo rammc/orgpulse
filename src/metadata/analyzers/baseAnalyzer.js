@@ -2,6 +2,13 @@ export function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }
 
+export function stripStringLiterals(source) {
+  return source.replace(/'(?:\\.|[^'\\\n])*'/g, (m) => {
+    const innerLen = Math.max(0, m.length - 2);
+    return "'" + ' '.repeat(innerLen) + "'";
+  });
+}
+
 export function findLineNumber(source, matchIndex) {
   return source.substring(0, matchIndex).split('\n').length;
 }

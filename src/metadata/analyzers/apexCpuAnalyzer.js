@@ -1,29 +1,18 @@
 import {
   stripComments,
+  stripStringLiterals,
   findLineNumber,
   extractMethodContext,
   extractLogicalSnippet,
   isTestClass,
 } from './baseAnalyzer.js';
 
-function findMatchingBrace(source, openIndex) {
+function findMatchingDelimiter(source, openIndex, openCh, closeCh) {
   let depth = 1;
-  let inString = false;
-  let strChar = null;
   for (let i = openIndex + 1; i < source.length; i++) {
     const ch = source[i];
-    if (!inString && (ch === "'" || ch === '"')) {
-      inString = true;
-      strChar = ch;
-      continue;
-    }
-    if (inString && ch === strChar && source[i - 1] !== '\\') {
-      inString = false;
-      continue;
-    }
-    if (inString) continue;
-    if (ch === '{') depth++;
-    else if (ch === '}') {
+    if (ch === openCh) depth++;
+    else if (ch === closeCh) {
       depth--;
       if (depth === 0) return i;
     }
@@ -31,33 +20,89 @@ function findMatchingBrace(source, openIndex) {
   return -1;
 }
 
+function findMatchingBrace(source, openIndex) {
+  return findMatchingDelimiter(source, openIndex, '{', '}');
+}
+
+function findMatchingParen(source, openIndex) {
+  return findMatchingDelimiter(source, openIndex, '(', ')');
+}
+
+function skipWhitespace(source, from) {
+  let i = from;
+  while (i < source.length && /\s/.test(source[i])) i++;
+  return i;
+}
+
 function findLoopBlocks(source) {
   const loops = [];
-  const forRegex = /\bfor\s*\(([^)]+)\)\s*\{/g;
+  const keywordRegex = /\b(for|while|do)\b/g;
   let match;
-  while ((match = forRegex.exec(source)) !== null) {
-    const openBrace = match.index + match[0].length - 1;
-    const close = findMatchingBrace(source, openBrace);
-    if (close === -1) continue;
-    loops.push({
-      start: match.index,
-      bodyStart: openBrace + 1,
-      end: close,
-      body: source.substring(openBrace + 1, close),
-      header: match[1],
-    });
+  while ((match = keywordRegex.exec(source)) !== null) {
+    const keyword = match[1];
+    let i = skipWhitespace(source, match.index + keyword.length);
+
+    if (keyword === 'do') {
+      if (source[i] !== '{') continue;
+      const open = i;
+      const close = findMatchingBrace(source, open);
+      if (close === -1) continue;
+      loops.push({
+        start: match.index,
+        bodyStart: open + 1,
+        end: close,
+        body: source.substring(open + 1, close),
+        header: '',
+        kind: 'do-while',
+      });
+      continue;
+    }
+
+    if (source[i] !== '(') continue;
+    const parenClose = findMatchingParen(source, i);
+    if (parenClose === -1) continue;
+    const header = source.substring(i + 1, parenClose);
+    let j = skipWhitespace(source, parenClose + 1);
+
+    if (source[j] === '{') {
+      const open = j;
+      const close = findMatchingBrace(source, open);
+      if (close === -1) continue;
+      loops.push({
+        start: match.index,
+        bodyStart: open + 1,
+        end: close,
+        body: source.substring(open + 1, close),
+        header,
+        kind: keyword,
+      });
+    } else {
+      let k = j;
+      while (k < source.length && source[k] !== ';') k++;
+      if (k >= source.length) continue;
+      loops.push({
+        start: match.index,
+        bodyStart: j,
+        end: k,
+        body: source.substring(j, k + 1),
+        header,
+        kind: keyword,
+      });
+    }
   }
   return loops;
 }
 
 const BODY_PATTERNS = {
   SOQL_IN_LOOP: {
-    test: (body) => /\[\s*SELECT\b/is.test(body),
+    test: (body) =>
+      /\[\s*SELECT\b/is.test(body) ||
+      /\bDatabase\.(?:query|getQueryLocator|queryWithBinds|countQuery)\s*\(/i.test(body),
     name: 'SOQL in loop',
     severity: 'critical',
     confidence: 'high',
     description:
-      'SOQL query inside a for-loop. Hits the 100 queries-per-transaction governor limit.',
+      'SOQL query inside a loop. Hits the 100 queries-per-transaction governor limit. Includes bracket SOQL and Database.query/getQueryLocator/queryWithBinds/countQuery.',
     relatedSignals: [
       'total_cpu_time',
       'apex_execution_time',
@@ -65,35 +110,65 @@ const BODY_PATTERNS = {
       'concurrent_apex_errors',
     ],
   },
+  SOSL_IN_LOOP: {
+    test: (body) => /\[\s*FIND\b/is.test(body) || /\bSearch\.query\s*\(/i.test(body),
+    name: 'SOSL in loop',
+    severity: 'critical',
+    confidence: 'high',
+    description: 'SOSL search inside a loop. Hits the 20 SOSL-per-transaction governor limit.',
+    relatedSignals: ['total_cpu_time', 'apex_execution_time', 'slow_transactions'],
+  },
   DML_IN_LOOP: {
-    test: (body) => /\b(?:insert|update|upsert|delete|undelete)\s+\w/i.test(body),
+    test: (body) => /\b(?:insert|update|upsert|delete|undelete|merge)\s+\w/i.test(body),
     name: 'DML in loop',
     severity: 'critical',
     confidence: 'high',
-    description: 'DML operation inside a for-loop. Hits the 150 DML-per-transaction limit.',
+    description:
+      'DML operation inside a loop. Hits the 150 DML-per-transaction limit. Includes insert/update/upsert/delete/undelete/merge.',
     relatedSignals: ['total_cpu_time', 'apex_execution_time', 'concurrent_apex_errors'],
   },
   DATABASE_DML_IN_LOOP: {
-    test: (body) => /\bDatabase\.(?:insert|update|upsert|delete)\s*\(/i.test(body),
+    test: (body) =>
+      /\bDatabase\.(?:insert|update|upsert|delete|undelete|merge|convertLead)\s*\(/i.test(body),
     name: 'Database.DML() in loop',
     severity: 'critical',
     confidence: 'high',
-    description: 'Database DML call inside a for-loop. Same governor limit issue as direct DML.',
+    description: 'Database DML call inside a loop. Same governor limit issue as direct DML.',
+    relatedSignals: ['total_cpu_time', 'apex_execution_time'],
+  },
+  CALLOUT_IN_LOOP: {
+    test: (body) =>
+      /\b(?:Http|HttpRequest)\s*\(\s*\)/.test(body) ||
+      /\.send\s*\(\s*(?:req|request|httpReq)\w*\s*\)/i.test(body),
+    name: 'HTTP callout in loop',
+    severity: 'critical',
+    confidence: 'medium',
+    description:
+      'HTTP callout inside a loop. Hits the 100 callouts-per-transaction limit and is typically serialized.',
+    relatedSignals: ['total_cpu_time', 'apex_execution_time'],
+  },
+  EMAIL_IN_LOOP: {
+    test: (body) => /\bMessaging\.sendEmail\s*\(/i.test(body),
+    name: 'Messaging.sendEmail in loop',
+    severity: 'warning',
+    confidence: 'high',
+    description:
+      'Messaging.sendEmail inside a loop. Batch messages into a single call to avoid email-invocation limits.',
     relatedSignals: ['total_cpu_time', 'apex_execution_time'],
   },
   NESTED_LOOP: {
-    test: (body) => /\bfor\s*\([^)]+\)\s*\{/i.test(body),
+    test: (body) => /\b(?:for|while)\b[^;{]*\{/i.test(body),
     name: 'Nested loops',
     severity: 'warning',
     confidence: 'medium',
-    description: 'Nested for-loops. Check for O(n^2) complexity.',
+    description: 'Nested loops. Review for O(n*m) complexity if both inputs scale with data size.',
     relatedSignals: ['total_cpu_time', 'apex_execution_time'],
   },
 };
 
 export function analyze(filePath, fileContent) {
   if (!filePath.endsWith('.cls') && !filePath.endsWith('.trigger')) return [];
-  const source = stripComments(fileContent);
+  const source = stripStringLiterals(stripComments(fileContent));
   const findings = [];
   const loops = findLoopBlocks(source);
   const testCheck = isTestClass(filePath, fileContent);

@@ -1,5 +1,6 @@
 import {
   stripComments,
+  stripStringLiterals,
   findLineNumber,
   extractLogicalSnippet,
   isTestClass,
@@ -7,20 +8,32 @@ import {
 
 const PATTERNS = {
   UPDATE_WITHOUT_FOR_UPDATE: {
-    regex: /\[\s*SELECT[^\]]+FROM\s+(\w+)[^\]]*\][\s\S]{0,200}?(?:update|upsert)\s+\w/gis,
+    regex:
+      /\[\s*SELECT[^\]]+FROM\s+(\w+)[^\]]*\][\s\S]{0,200}?(?:(?:update|upsert|merge)\s+\w|Database\.(?:update|upsert|merge)\s*\()/gis,
     name: 'Read-then-write without FOR UPDATE',
     severity: 'warning',
     description:
-      'Records queried then updated without FOR UPDATE lock can cause row lock contention.',
+      'Records queried then updated without FOR UPDATE lock can cause row lock contention. Covers direct DML and Database.update/upsert/merge.',
     confidence: 'medium',
+    stripStrings: true,
   },
   BATCH_WITHOUT_ORDER_BY: {
-    regex: /Database\.getQueryLocator\s*\(\s*['"`](?![^'"`]*ORDER\s+BY)/gi,
+    regex: /Database\.getQueryLocator\s*\(\s*['"](?![^'"]*ORDER\s+BY)/gi,
     name: 'Batch query without ORDER BY',
     severity: 'info',
     description:
       'Batch Apex query without ORDER BY produces non-deterministic order, increasing row lock risk.',
     confidence: 'medium',
+    stripStrings: false,
+  },
+  BATCH_DYNAMIC_QUERY: {
+    regex: /Database\.getQueryLocator\s*\(\s*(?!['"])[A-Za-z_]/gi,
+    name: 'Batch query built from non-literal string',
+    severity: 'info',
+    description:
+      'Database.getQueryLocator called with a variable — ORDER BY cannot be verified statically. Review the query string for deterministic ordering.',
+    confidence: 'low',
+    stripStrings: true,
   },
 };
 
@@ -47,9 +60,11 @@ export function analyze(filePath, fileContent) {
   if (!filePath.endsWith('.cls') && !filePath.endsWith('.trigger')) return [];
   const testCheck = isTestClass(filePath, fileContent);
   if (testCheck.isTest) return [];
-  const source = stripComments(fileContent);
+  const commentStripped = stripComments(fileContent);
+  const stringStripped = stripStringLiterals(commentStripped);
   const findings = [];
   for (const [key, pattern] of Object.entries(PATTERNS)) {
+    const source = pattern.stripStrings ? stringStripped : commentStripped;
     const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
     let match;
     while ((match = regex.exec(source)) !== null) {
