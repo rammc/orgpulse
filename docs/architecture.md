@@ -46,13 +46,25 @@ The optional Deep Analysis Mode uses the Anthropic Claude Vision API. Instead of
 src/
 ├── index.html          # Single-page application shell
 ├── styles/
-│   └── main.css        # Design system + all component styles
+│   ├── main.css        # Design system + all component styles
+│   └── metadata.css    # Local-build metadata section styles
 ├── js/
 │   ├── matrix.js       # Main entry point — orchestrates everything
 │   ├── ocr.js          # Tesseract.js OCR integration
 │   ├── vision.js       # Anthropic Claude Vision API integration
 │   ├── settings.js     # API key management modal
+│   ├── validation.js   # Metric whitelist validation for Vision findings
 │   └── recommendations.js  # Maps analysis results to matrix cells
+├── api/
+│   └── claudeClient.js # Shared Claude API call helper (timeout, typed errors)
+├── ui/
+│   ├── metadataSection.js  # Local-build metadata analysis UI
+│   └── markdownExporter.js # Markdown report export
+├── metadata/            # Local-build-only: SFDX project metadata analysis
+│   ├── index.js         # Public API for the metadata module
+│   ├── analyzers/       # apexCpuAnalyzer, apexRowLockAnalyzer, flowAnalyzer, metadataAnalyzer
+│   ├── fixSuggestions/  # AI-generated fix suggestions (fixSuggester.js, fixCache.js)
+│   └── fs/              # File System Access API integration (directory picker, file reader)
 └── data/
     └── recommendations.json # 9-field matrix content and recommendations
 ```
@@ -64,7 +76,10 @@ matrix.js (entry point)
 ├── settings.js     (API key CRUD)
 ├── ocr.js          (Tesseract.js, lazy-loaded)
 ├── vision.js       (Claude API, imports settings.js)
-└── recommendations.js (matching logic)
+├── recommendations.js (matching logic)
+└── ui/metadataSection.js (local build only, lazy-loaded)
+    ├── metadata/index.js       (SFDX project analysis)
+    └── metadata/fixSuggestions/ (imports api/claudeClient.js)
 ```
 
 ## Data Flow

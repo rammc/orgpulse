@@ -6,7 +6,7 @@ labels: ["recommendation", "content"]
 
 ## Which matrix cell?
 
-Specify the matrix cell this recommendation applies to (e.g., "High Growth / Low Engagement").
+Specify the matrix cell this recommendation applies to (e.g., "Quick Wins" or "Strategic").
 
 ## Recommendation Title
 
@@ -22,7 +22,7 @@ What signals or data conditions should cause this recommendation to appear? Desc
 
 ## Tags
 
-List relevant tags (e.g., `adoption`, `engagement`, `governance`, `license-risk`).
+List relevant tags (e.g., `Apex`, `SOQL`, `LWC`, `Integration`).
 
 ## References
 

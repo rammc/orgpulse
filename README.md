@@ -98,6 +98,8 @@ OrgPulse has two build outputs from a single codebase:
 - Screenshot diagnostics plus metadata analysis of SFDX projects
 - Runs on localhost via `npm run dev:local`
 - Metadata analyzer scans Apex classes, triggers, and Flows for patterns correlating with Scale Center signals
+- AI-generated fix suggestions per finding (BYOK, Claude Haiku by default with a Sonnet option)
+- Export all findings as a Markdown report (executive summary plus detailed findings)
 - Not deployed — for architects working with real Salesforce metadata
 - Command: `npm run dev:local`
 
