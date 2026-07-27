@@ -48,11 +48,11 @@ Each entry in `recommendations.json` represents one cell in the 9-field matrix a
 | `id`                | string   | Unique identifier for the matrix cell (e.g. `"quick-wins"`) |
 | `matrix_position`   | object   | `{ "impact": "high"|"medium"|"low", "effort": "low"|"medium"|"high" }` |
 | `color`             | string   | Color code: `"green"`, `"yellow"`, `"orange"`, or `"red"`  |
-| `icon`              | string   | Emoji icon displayed in the matrix cell                    |
+| `icon`              | string   | Icon name displayed in the matrix cell (e.g. `"zap"`)      |
 | `title`             | string   | English title for the matrix cell                          |
-| `priority_label`    | string   | German priority label (e.g. `"Sofort umsetzen"`)           |
-| `subtitle`          | string   | German description of the cell's meaning                   |
-| `scale_center_hint` | string   | German hint on which Scale Center section is relevant      |
+| `priority_label`    | string   | English priority label (e.g. `"Implement Now"`)             |
+| `subtitle`          | string   | English description of the cell's meaning                  |
+| `scale_center_hint` | string   | English hint on which Scale Center section is relevant     |
 | `trigger_signals`   | array    | Metrics and keywords that trigger this cell                |
 | `recommendations`   | array    | Array of recommendation objects (see below)                |
 | `contributors`      | array    | GitHub handles of contributors                             |
@@ -62,8 +62,8 @@ Each recommendation object:
 
 | Field        | Type   | Description                                                   |
 |--------------|--------|---------------------------------------------------------------|
-| `title`      | string | German title of the recommendation                            |
-| `body`       | string | German body text with actionable advice                       |
+| `title`      | string | English title of the recommendation                            |
+| `body`       | string | English body text with actionable advice                       |
 | `tags`       | array  | Technology area tags (e.g. `["Apex", "SOQL"]`)                |
 | `references` | array  | Array of `{ "url": "...", "type": "official_docs" }` objects  |
 
@@ -99,7 +99,7 @@ npm run lint
 
 ## Recommendation Content Guidelines
 
-- Recommendation bodies should be in **German** (we will add i18n later)
+- Recommendation bodies should be in **English**
 - UI labels and titles are in **English**
 - Include Salesforce documentation links where possible
 - Be specific and actionable — avoid vague advice

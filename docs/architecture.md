@@ -87,9 +87,9 @@ matrix.js (entry point)
 ### Basic Mode (OCR)
 
 1. User uploads a Scale Center screenshot (PNG/JPG)
-2. `ocr.js` crops the top 30% of the image (counter region)
-3. Tesseract.js performs text recognition in the browser
-4. Regex patterns extract six counter values
+2. `ocr.js` detects the layout, then crops each of the six counter tiles individually (per-tile OCR, see `ORG_PERF_LAYOUT`); a full-region crop with label-based regex parsing remains as a fallback for the legacy Scale Center layout
+3. Tesseract.js performs text recognition on each tile in the browser
+4. A digit-matching regex extracts the numeric value per tile
 5. `recommendations.js` maps counters to matrix cells
 6. `matrix.js` highlights relevant cells and displays the detection summary
 

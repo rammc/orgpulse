@@ -10,7 +10,8 @@ Migrated from the orgpulse-dev prototype on 2026-04-17. Loaded only in local bui
 
 - **apexCpuAnalyzer** — SOQL/DML in loops, nested iterations (brace-aware detection)
 - **apexRowLockAnalyzer** — read-then-write patterns with context-aware confidence (batch/trigger/controller/LIMIT 1)
-- **flowAnalyzer** — RT Flow patterns: no entry filter, record ops in loops, multiple flows on same trigger, synchronous callouts
+- **flowAnalyzer** — RT Flow patterns: no entry filter, record ops in loops, subflow-in-loop, multiple flows on same trigger, synchronous callouts, Get Records inefficiencies (redundant fetches, missing filters, unindexed fields, heap-heavy fields)
+- **metadataAnalyzer** — roll-up summaries on high-contention objects, active legacy Workflow rules, workflow field updates on high-contention objects, duplicate active triggers on the same sObject
 
 ## Adding a new analyzer
 
