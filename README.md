@@ -4,8 +4,8 @@
 
 **Diagnose your Salesforce org's performance from a single Scale Center screenshot.**
 
-[![Status](https://img.shields.io/badge/status-public%20beta-brightgreen)]()
-[![License](https://img.shields.io/badge/license-MIT-blue)]()
+![Status](https://img.shields.io/badge/status-public%20beta-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
 

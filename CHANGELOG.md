@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project bootstrap
 - Phase 1: Tesseract.js OCR for counter extraction
 - Phase 2: Anthropic Claude Vision integration (BYOK)
-- 9-field prioritization matrix with German recommendations
+- 9-field prioritization matrix with recommendations
 - Settings dialog for API key management
 - GitHub Pages deployment workflow
 - Try-with-sample-screenshot button for the onboarding flow
